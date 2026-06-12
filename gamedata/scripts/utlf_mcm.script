@@ -1,0 +1,32 @@
+local function default_toggle_key()
+    return utlf and utlf.get_default_toggle_key and utlf.get_default_toggle_key() or DIK_keys.DIK_L
+end
+
+local function default_toggle_modifier()
+    return utlf and utlf.get_default_toggle_modifier and utlf.get_default_toggle_modifier() or 3
+end
+
+function on_mcm_load()
+    return {
+        id = "utlf",
+        sh = true,
+        gr = {
+            { id = "controls_title", type = "desc", clr = { 200, 200, 255, 200 }, text = "ui_mcm_utlf_controls_title" },
+            { id = "controls_description", type = "desc", text = "ui_mcm_utlf_controls_description" },
+            { id = "toggle_key", type = "key_bind", val = 2, def = default_toggle_key(), hint = "utlf_toggle_key" },
+            {
+                id = "toggle_modifier",
+                type = ui_mcm.kb_mod_radio,
+                val = 2,
+                def = default_toggle_modifier(),
+                hint = "utlf_toggle_modifier",
+                content = {
+                    { 0, "mcm_kb_mod_none" },
+                    { 1, "mcm_kb_mod_shift" },
+                    { 2, "mcm_kb_mod_ctrl" },
+                    { 3, "mcm_kb_mod_alt" },
+                },
+            },
+        },
+    }
+end

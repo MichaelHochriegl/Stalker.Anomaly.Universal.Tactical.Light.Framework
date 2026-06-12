@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="windows-1251"?>
+
+<string_table>
+    <string id="ui_mcm_menu_utlf">
+        <text>Universal Tactical Light Framework</text>
+    </string>
+    <string id="ui_mcm_utlf_controls_title">
+        <text>Controls</text>
+    </string>
+    <string id="ui_mcm_utlf_controls_description">
+        <text>Configure the dedicated key used to toggle the active weapon tactical light. The default is Alt + L. This input is separate from the engine torch/headlamp bind.</text>
+    </string>
+    <string id="ui_mcm_utlf_toggle_key">
+        <text>Toggle tactical light</text>
+    </string>
+    <string id="ui_mcm_utlf_toggle_key_desc">
+        <text>Key used together with the selected modifier to toggle the weapon tactical light.</text>
+    </string>
+    <string id="ui_mcm_utlf_toggle_modifier">
+        <text>Toggle modifier</text>
+    </string>
+    <string id="ui_mcm_utlf_toggle_modifier_desc">
+        <text>Modifier key required together with the toggle key. Set to None if you want the toggle key to work without Shift, Ctrl, or Alt.</text>
+    </string>
+</string_table>

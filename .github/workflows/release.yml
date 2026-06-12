@@ -1,0 +1,47 @@
+name: Create Release Archive
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+env:
+  MOD_NAME: Universal_Tactical_Light_Framework
+
+jobs:
+  upload-archive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create archive
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION="${TAG_NAME#v}"
+          ARCHIVE_NAME="${MOD_NAME}-${VERSION}.zip"
+          STAGING_DIR="${MOD_NAME}"
+
+          mkdir -p "$STAGING_DIR"
+
+          cp -r gamedata "$STAGING_DIR/"
+          cp README.md "$STAGING_DIR/"
+          cp meta.ini "$STAGING_DIR/"
+
+          sed -i "s/^version=.*/version=${VERSION}/" "$STAGING_DIR/meta.ini"
+          sed -i "s/^installationFile=.*/installationFile=${ARCHIVE_NAME}/" "$STAGING_DIR/meta.ini"
+
+          zip -r "$ARCHIVE_NAME" "$STAGING_DIR"
+
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> "$GITHUB_ENV"
+
+      - name: Upload archive to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ARCHIVE_NAME }}
+          tag_name: ${{ github.event.release.tag_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
