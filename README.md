@@ -12,41 +12,61 @@ Generic scripted tactical light framework for S.T.A.L.K.E.R. Anomaly / GAMMA wea
 
 - Press the UTLF toggle key combo to toggle the scripted weapon tactical light.
 - The default combo is `Alt + L`.
-- The key and modifier can be changed in MCM under `Universal Tactical Light Framework`.
+- The key and modifier can be changed in MCM under `Universal Tactical Light Framework` > `Framework`.
 - The input handler consumes the configured combo press/release and suppresses the vanilla torch helper for that input, so `Alt + L` should not toggle the vanilla headlamp while UTLF is active.
 
-## Compatibility Model
+## MCM Pages
 
-This framework does not ship a broad weapon list. Weapon support is added by small patch mods that call:
+Compatibility patches can add their own pages under the shared `Universal Tactical Light Framework` MCM entry by returning their MCM page with the collection name `"utlf"`:
 
 ```lua
-utlf.register_pack("My Weapon Pack", {
-    {
-        sections = { "wpn_my_weapon", "wpn_my_weapon_alt" },
-    },
-})
+function on_mcm_load()
+    return {
+        id = "my_weapon_pack",
+        sh = true,
+        gr = {
+            { id = "range", type = "track", val = 2, min = 5, max = 80, step = 1, def = 26 },
+            { id = "cone_deg", type = "track", val = 2, min = 8, max = 60, step = 1, def = 24 },
+        },
+    }, "utlf"
+end
 ```
 
-You can easily achieve this by creating a small patch mod that calls `utlf.register_pack` like this:
+Patch scripts can read numeric MCM values through the framework helper:
+
 ```lua
-local PDX_PROFILE = {
-    sections = {
-        "wpn_pdx",
-        "wpn_pdx_terminal",
-        "wpn_pdx_terminal_off",
+local range = utlf.get_mcm_number("utlf/my_weapon_pack/range", 26, 5, 80)
+local cone_deg = utlf.get_mcm_number("utlf/my_weapon_pack/cone_deg", 24, 8, 60)
+```
+
+`get_mcm_number(path, fallback, min, max)` returns the fallback when MCM is unavailable or the stored value is invalid, and clamps valid values to the provided bounds.
+
+For common configurable light profiles, prefer `setup_configured_pack()` so the framework handles MCM reads, profile registration, option-change refresh, and active-light rebuilds:
+
+```lua
+local PROFILE = {
+    sections = { "wpn_my_weapon", "wpn_my_weapon_alt" },
+}
+
+local CONFIG = {
+    page = "my_weapon_pack",
+    numbers = {
+        range = { def = 26, min = 5, max = 80 },
+        cone_deg = { def = 24, min = 8, max = 60 },
     },
 }
 
 function on_game_start()
-    if utlf and utlf.register_pack then
-        utlf.register_pack("Kmack Maxim PDX", { PDX_PROFILE })
+    if utlf and utlf.setup_configured_pack then
+        utlf.setup_configured_pack(PACK_NAME, PROFILE, CONFIG)
     else
-        printf("[utlf_kmack_pdx] framework script not available")
+        printf("[utlf_my_weapon] compatible framework script not available")
     end
 end
 ```
 
-This avoids MO2 overwrite conflicts between compatibility patches.
+`CONFIG.page` is the MCM namespace for that weapon patch. Use a unique value per compatibility patch so each weapon pack stores its own `range`, `cone_deg`, and future options independently.
+
 
 ## Profile Fields
 

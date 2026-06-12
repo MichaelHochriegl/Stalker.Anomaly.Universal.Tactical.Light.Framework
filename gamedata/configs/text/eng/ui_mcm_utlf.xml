@@ -4,6 +4,12 @@
     <string id="ui_mcm_menu_utlf">
         <text>Universal Tactical Light Framework</text>
     </string>
+    <string id="ui_mcm_menu_framework">
+        <text>Framework</text>
+    </string>
+    <string id="ui_mcm_menu_utlf_framework">
+        <text>Framework</text>
+    </string>
     <string id="ui_mcm_utlf_controls_title">
         <text>Controls</text>
     </string>

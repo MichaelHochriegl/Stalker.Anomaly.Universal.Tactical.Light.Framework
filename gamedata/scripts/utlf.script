@@ -23,6 +23,7 @@ local original_torch_toggle = nil
 local wrapped_torch_toggle = nil
 local suppress_torch_until = nil
 local suppress_torch_release_key = nil
+local attach_light
 
 local state = {
     desired_on = false,
@@ -59,6 +60,29 @@ local function normalize_sections(sections)
     return sections or {}
 end
 
+local function profile_supports_section(profile, section)
+    if not profile or not section then
+        return false
+    end
+
+    for _, supported_section in ipairs(normalize_sections(profile.sections)) do
+        if supported_section == section then
+            return true
+        end
+    end
+
+    local parent = ini_sys:r_string_ex(section, "parent_section")
+    if parent then
+        for _, supported_section in ipairs(normalize_sections(profile.sections)) do
+            if supported_section == parent then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
 function register_light(section, profile)
     if not section or type(profile) ~= "table" then
         return
@@ -76,6 +100,45 @@ function register_pack(pack_name, profiles)
             printf("[utlf] registered %s from %s", section, tostring(pack_name or "unknown pack"))
         end
     end
+end
+
+local function config_path(page_id, option_id)
+    return "utlf/" .. tostring(page_id) .. "/" .. tostring(option_id)
+end
+
+local function configured_profile(profile, config)
+    local copy = copy_profile(profile)
+    local page_id = config and (config.page_id or config.page)
+    local numbers = config and config.numbers
+
+    if page_id and numbers then
+        for field, spec in pairs(numbers) do
+            local option_id = spec.id or field
+            local fallback = spec.def or spec.default or profile[field]
+            copy[field] = get_mcm_number(config_path(page_id, option_id), fallback, spec.min, spec.max)
+        end
+    end
+
+    return copy
+end
+
+local function register_configured_pack(pack_name, profile, config)
+    register_pack(pack_name, { configured_profile(profile, config) })
+end
+
+function setup_configured_pack(pack_name, profile, config)
+    register_configured_pack(pack_name, profile, config)
+
+    RegisterScriptCallback("on_option_change", function()
+        register_configured_pack(pack_name, profile, config)
+
+        if not config or config.rebuild_active_light ~= false then
+            local weapon = db.actor and db.actor:active_item()
+            if weapon and IsWeapon(weapon) and profile_supports_section(profile, weapon:section()) then
+                rebuild_active_light((config and config.rebuild_reason) or (tostring(pack_name) .. " settings changed"))
+            end
+        end
+    end)
 end
 
 local function profile_for_section(section)
@@ -154,6 +217,30 @@ local function configured_modifier_pressed(modifier)
     return not (shift or ctrl or alt)
 end
 
+function clamp_number(value, fallback, min_value, max_value)
+    value = tonumber(value) or tonumber(fallback)
+    if not value then
+        return fallback
+    end
+
+    if min_value and value < min_value then
+        return min_value
+    elseif max_value and value > max_value then
+        return max_value
+    end
+
+    return value
+end
+
+function get_mcm_number(path, fallback, min_value, max_value)
+    local value = fallback
+    if ui_mcm then
+        value = ui_mcm.get(path)
+    end
+
+    return clamp_number(value, fallback, min_value, max_value)
+end
+
 local function suppress_engine_torch(key)
     suppress_torch_release_key = key
     suppress_torch_until = time_global() + 3000
@@ -168,8 +255,8 @@ local function refresh_settings()
         return
     end
 
-    settings.toggle_key = tonumber(ui_mcm.get("utlf/toggle_key")) or DEFAULT_TOGGLE_KEY
-    settings.toggle_modifier = tonumber(ui_mcm.get("utlf/toggle_modifier")) or DEFAULT_TOGGLE_MODIFIER
+    settings.toggle_key = tonumber(ui_mcm.get("utlf/framework/toggle_key")) or tonumber(ui_mcm.get("utlf/toggle_key")) or DEFAULT_TOGGLE_KEY
+    settings.toggle_modifier = tonumber(ui_mcm.get("utlf/framework/toggle_modifier")) or tonumber(ui_mcm.get("utlf/toggle_modifier")) or DEFAULT_TOGGLE_MODIFIER
 end
 
 local function wrap_engine_torch_toggle()
@@ -200,6 +287,19 @@ end
 
 function get_default_toggle_modifier()
     return DEFAULT_TOGGLE_MODIFIER
+end
+
+function rebuild_active_light(reason)
+    if not state.desired_on or not state.light then
+        return
+    end
+
+    local weapon, profile = active_supported_weapon()
+    if not weapon or not profile or weapon:id() ~= state.weapon_id then
+        return
+    end
+
+    attach_light(weapon, profile, reason or "profile changed")
 end
 
 local function state_weapon()
@@ -329,7 +429,7 @@ local function create_light(attachment, profile)
     return light
 end
 
-local function attach_light(weapon, profile, reason)
+function attach_light(weapon, profile, reason)
     detach_light(reason)
 
     local ok, err = pcall(function()
