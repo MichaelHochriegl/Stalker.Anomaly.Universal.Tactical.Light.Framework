@@ -1,0 +1,415 @@
+local strgsub = string.gsub
+
+DEFAULTS = {
+    BUILT_IN_ATTACHMENT_NAME = "utlf_tactical_light_attachment",
+    MODULAR_ATTACHMENT_NAME = "utlf_modular_tactical_light",
+    MODULAR_VAR = "utlf_tactical_light",
+    ATTACHMENT_TYPE_HUD = 0,
+    TOGGLE_KEY = DIK_keys.DIK_L,
+    TOGGLE_MODIFIER = 3,
+    FIRE_BONE = "wpn_body",
+    LIGHT_BONE = "wpn_body",
+    FIRE_POINT = "0,0,0.035",
+    ATTACHMENT_SCALE = 0.001,
+    MODULAR_MODEL = "anomaly_weapons\\ver_laser\\wpn_laser_new",
+    MODULAR_SCALE = 1,
+    RANGE = 26,
+    CONE_DEG = 24,
+    TEXTURE = "internal\\internal_tactical_torch",
+    REATTACH_DELAY_MS = 250,
+    PRE_REPLACEMENT_DELAY_MS = 400,
+    REPLACEMENT_WINDOW_MS = 1000,
+}
+
+local registered = {}
+local attachment_groups = {
+    base = { "utlf_tactical_light" },
+}
+local state = {
+    desired_on = false,
+    weapon = nil,
+    weapon_id = nil,
+    section = nil,
+    hud = nil,
+    profile = nil,
+    attachment = nil,
+    attachment_name = nil,
+    attachment_is_modular = false,
+    light = nil,
+    replacement_until = nil,
+    replacement_target_section = nil,
+}
+local settings = {
+    toggle_key = DEFAULTS.TOGGLE_KEY,
+    toggle_modifier = DEFAULTS.TOGGLE_MODIFIER,
+}
+
+function get_state()
+    return state
+end
+
+function get_settings()
+    return settings
+end
+
+function copy_profile(profile)
+    local copy = {}
+    for key, value in pairs(profile or {}) do
+        copy[key] = value
+    end
+    return copy
+end
+
+function normalize_sections(sections)
+    if type(sections) == "string" then
+        return { sections }
+    end
+    return sections or {}
+end
+
+local function trim(value)
+    if not value then
+        return nil
+    end
+    value = tostring(value)
+    return (value:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local function append_unique(list, seen, value)
+    value = trim(value)
+    if value and value ~= "" and not seen[value] then
+        seen[value] = true
+        list[#list + 1] = value
+    end
+end
+
+function list_from_value(value)
+    if not value then
+        return {}
+    end
+
+    if type(value) == "table" then
+        return value
+    end
+
+    if str_explode then
+        return str_explode(tostring(value), ",")
+    end
+
+    local values = {}
+    for entry in tostring(value):gmatch("[^,]+") do
+        values[#values + 1] = entry
+    end
+    return values
+end
+
+function safe_is_weapon(obj)
+    if not obj then
+        return false
+    end
+
+    local ok, is_weapon = pcall(_G.IsWeapon, obj)
+    return ok and is_weapon == true
+end
+
+function profile_supports_section(profile, section)
+    if not profile or not section then
+        return false
+    end
+
+    for _, supported_section in ipairs(normalize_sections(profile.sections)) do
+        if supported_section == section then
+            return true
+        end
+    end
+
+    local parent = ini_sys:r_string_ex(section, "parent_section")
+    if parent then
+        for _, supported_section in ipairs(normalize_sections(profile.sections)) do
+            if supported_section == parent then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+function register_light(section, profile)
+    if not section or type(profile) ~= "table" then
+        return
+    end
+
+    local copy = copy_profile(profile)
+    copy.section = section
+    registered[section] = copy
+end
+
+function register_pack(pack_name, profiles)
+    for _, profile in ipairs(profiles or {}) do
+        for _, section in ipairs(normalize_sections(profile.sections)) do
+            register_light(section, profile)
+            printf("[utlf] registered %s from %s", section, tostring(pack_name or "unknown pack"))
+        end
+    end
+end
+
+function register_attachment_group(group_name, sections)
+    if not group_name then
+        return
+    end
+    attachment_groups[group_name] = normalize_sections(sections)
+end
+
+function config_path(page_id, option_id)
+    return "utlf/" .. tostring(page_id) .. "/" .. tostring(option_id)
+end
+
+function clamp_number(value, fallback, min_value, max_value)
+    value = tonumber(value) or tonumber(fallback)
+    if not value then
+        return fallback
+    end
+
+    if min_value and value < min_value then
+        return min_value
+    elseif max_value and value > max_value then
+        return max_value
+    end
+
+    return value
+end
+
+function get_mcm_number(path, fallback, min_value, max_value)
+    local value = fallback
+    if ui_mcm then
+        value = ui_mcm.get(path)
+    end
+
+    return clamp_number(value, fallback, min_value, max_value)
+end
+
+function configured_profile(profile, config)
+    local copy = copy_profile(profile)
+    local page_id = config and (config.page_id or config.page)
+    local numbers = config and config.numbers
+
+    if page_id and numbers then
+        for field, spec in pairs(numbers) do
+            local option_id = spec.id or field
+            local fallback = spec.def or spec.default or profile[field]
+            copy[field] = get_mcm_number(config_path(page_id, option_id), fallback, spec.min, spec.max)
+        end
+    end
+
+    return copy
+end
+
+function profile_for_section(section)
+    if not section then
+        return nil
+    end
+
+    local profile = registered[section]
+    if profile then
+        return profile
+    end
+
+    local parent = ini_sys:r_string_ex(section, "parent_section")
+    if parent then
+        return registered[parent]
+    end
+end
+
+function active_supported_weapon()
+    local item = db.actor and db.actor:active_item()
+    if item and safe_is_weapon(item) then
+        local profile = profile_for_section(item:section())
+        if profile then
+            return item, profile
+        end
+    end
+end
+
+function profile_mode(profile)
+    if not profile then
+        return "built_in"
+    end
+
+    if profile.modular_blacklist == true or profile.no_modular_attachment == true then
+        return "built_in"
+    end
+
+    return profile.attachment_mode or profile.mode or "built_in"
+end
+
+function is_modular_profile(profile)
+    return profile_mode(profile) == "modular"
+end
+
+function profile_allowed_attachments(profile)
+    local result = {}
+    local seen = {}
+
+    for _, section in ipairs(normalize_sections(profile and (profile.attachments or profile.light_attachments or profile.utlf_lights))) do
+        append_unique(result, seen, section)
+    end
+
+    local groups = profile and (profile.attachment_groups or profile.light_groups or profile.utlf_light_groups)
+    if not groups and is_modular_profile(profile) then
+        groups = { "base" }
+    end
+
+    for _, group_name in ipairs(normalize_sections(groups)) do
+        local group = attachment_groups[trim(group_name)]
+        for _, section in ipairs(normalize_sections(group)) do
+            append_unique(result, seen, section)
+        end
+    end
+
+    return result
+end
+
+function attachment_allowed(profile, item_section)
+    for _, section in ipairs(profile_allowed_attachments(profile)) do
+        if section == item_section then
+            return true
+        end
+    end
+    return false
+end
+
+function is_utlf_attachment_item(section)
+    return ini_sys:r_string_ex(section, "utlf_light_attachment") == "true"
+        or ini_sys:r_bool_ex(section, "utlf_light_attachment") == true
+end
+
+function saved_modular_light(weapon)
+    if not weapon then
+        return nil
+    end
+    return se_load_var(weapon:id(), weapon:name(), DEFAULTS.MODULAR_VAR)
+end
+
+function save_modular_light(weapon, section)
+    if not weapon or not section then
+        return
+    end
+
+    se_save_var(weapon:id(), weapon:name(), DEFAULTS.MODULAR_VAR, {
+        section = section,
+        icon_layer = ini_sys:r_string_ex(section, "attachment_icon_layer"),
+    })
+end
+
+function clear_modular_light(weapon)
+    if not weapon then
+        return
+    end
+    se_save_var(weapon:id(), weapon:name(), DEFAULTS.MODULAR_VAR, nil)
+end
+
+function weapon_hud_section(weapon)
+    return SYS_GetParam(0, weapon:section(), "hud", weapon:section())
+end
+
+function attachment_model(weapon, profile)
+    local model = profile.attachment_model or profile.model or SYS_GetParam(0, weapon:section(), "visual", nil)
+    if not model or model == "" then
+        model = profile.default_model or SYS_GetParam(0, weapon:section(), "visual", weapon:section())
+    end
+    return strgsub(model, "%.ogf$", "")
+end
+
+function modular_attachment_model(section, profile)
+    local model = section and ini_sys:r_string_ex(section, "scripted_model")
+    model = model or (profile and (profile.attachment_model or profile.model)) or DEFAULTS.MODULAR_MODEL
+    return strgsub(model, "%.ogf$", "")
+end
+
+function vector_from(value, fallback)
+    if type(value) == "userdata" then
+        return value
+    end
+    return utils_data.string_to_vector(value or fallback)
+end
+
+function color_from(value)
+    local color = fcolor()
+    if type(value) == "table" then
+        return color:set(value[1] or 1.0, value[2] or 0.94, value[3] or 0.78, value[4] or 0.55)
+    end
+    return color:set(1.0, 0.94, 0.78, 0.55)
+end
+
+local function csv_number(value, index, fallback)
+    if type(value) == "table" then
+        return tonumber(value[index]) or fallback
+    end
+
+    if type(value) == "string" then
+        local parts = list_from_value(value)
+        return tonumber(parts[index]) or fallback
+    end
+
+    return fallback
+end
+
+local function profile_number(profile, key, fallback)
+    local value = profile and profile[key]
+    if value ~= nil then
+        return tonumber(value) or fallback
+    end
+    return fallback
+end
+
+function modular_transform(profile)
+    profile = profile or {}
+
+    local pos = profile.attachment_pos or profile.position
+    local rot = profile.attachment_rot or profile.rotation
+
+    return {
+        x = profile_number(profile, "attachment_pos_x", csv_number(pos, 1, 0)),
+        y = profile_number(profile, "attachment_pos_y", csv_number(pos, 2, 0)),
+        z = profile_number(profile, "attachment_pos_z", csv_number(pos, 3, 0)),
+        rx = profile_number(profile, "attachment_rot_x", csv_number(rot, 1, 0)),
+        ry = profile_number(profile, "attachment_rot_y", csv_number(rot, 2, 0)),
+        rz = profile_number(profile, "attachment_rot_z", csv_number(rot, 3, 0)),
+        scale = profile_number(profile, "attachment_scale", DEFAULTS.MODULAR_SCALE),
+        bone = profile.attach_bone or profile.attachment_bone or profile.sl_attach_bone or 0,
+    }
+end
+
+function refresh_settings()
+    if not ui_mcm then
+        return
+    end
+
+    settings.toggle_key = tonumber(ui_mcm.get("utlf/framework/toggle_key")) or tonumber(ui_mcm.get("utlf/toggle_key")) or DEFAULTS.TOGGLE_KEY
+    settings.toggle_modifier = tonumber(ui_mcm.get("utlf/framework/toggle_modifier")) or tonumber(ui_mcm.get("utlf/toggle_modifier")) or DEFAULTS.TOGGLE_MODIFIER
+end
+
+function state_weapon()
+    if not state.weapon_id then
+        return nil
+    end
+
+    local obj = get_object_by_id(state.weapon_id)
+    if obj and safe_is_weapon(obj) then
+        return obj
+    end
+end
+
+function clear_replacement()
+    state.replacement_until = nil
+    state.replacement_target_section = nil
+end
+
+function replacement_pending()
+    return state.replacement_until and time_global() <= state.replacement_until
+end
+
+function loaded_sections_count()
+    return tostring(table.size and table.size(registered) or "unknown")
+end

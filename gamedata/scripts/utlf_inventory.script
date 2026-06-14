@@ -1,0 +1,109 @@
+local snd_attach = sound_object("interface\\items\\inv_items_addon_1")
+local focus_sections = {}
+local focus_section = nil
+
+local function modular_detach_condition(obj, bag, mode)
+    return mode == "inventory" and obj and utlf_core.safe_is_weapon(obj) and utlf_core.saved_modular_light(obj) ~= nil
+end
+
+local function modular_detach_name(obj, bag, mode)
+    return game.translate_string("st_utlf_detach_tactical_light")
+end
+
+local function modular_detach_functor(obj, bag, mode)
+    return utlf_modular.detach_item(obj, true)
+end
+
+local function utlf_icon_layer(cell, obj, section)
+    if not obj or not utlf_core.safe_is_weapon(obj) then
+        return nil
+    end
+
+    local saved = utlf_core.saved_modular_light(obj)
+    if not saved or not saved.icon_layer then
+        return nil
+    end
+
+    local ok, axis = pcall(utils_xml.get_item_axis, section)
+    if not ok or not axis then
+        return nil
+    end
+
+    return { texture = saved.icon_layer, x = axis.w - 75, y = axis.h - 45, w = 50, h = 50 }
+end
+
+local function ActorMenu_on_item_focus_receive(obj)
+    if not obj or not utlf_core.safe_is_weapon(obj) then
+        return
+    end
+
+    local sec = obj:section()
+    if focus_section ~= sec then
+        focus_section = sec
+        empty_table(focus_sections)
+
+        local profile = utlf_core.profile_for_section(sec)
+        if profile and utlf_core.is_modular_profile(profile) then
+            for _, item_section in ipairs(utlf_core.profile_allowed_attachments(profile)) do
+                focus_sections[#focus_sections + 1] = item_section
+            end
+        end
+    end
+
+    local inventory = GetActorMenu()
+    if not inventory or not inventory:IsShown() then
+        return
+    end
+
+    for i = 1, #focus_sections do
+        inventory:highlight_section_in_slot(focus_sections[i], EDDListType.iActorBag)
+        inventory:highlight_section_in_slot(focus_sections[i], EDDListType.iPartnerTradeBag)
+        inventory:highlight_section_in_slot(focus_sections[i], EDDListType.iDeadBodyBag)
+        inventory:highlight_section_in_slot(focus_sections[i], EDDListType.iActorTrade)
+        inventory:highlight_section_in_slot(focus_sections[i], EDDListType.iPartnerTrade)
+    end
+end
+
+local function ActorMenu_on_item_drag_drop(obj, weapon, no1, no2)
+    if not obj or not weapon or not utlf_core.safe_is_weapon(weapon) then
+        return
+    end
+
+    local profile = utlf_core.profile_for_section(weapon:section())
+    if not profile or not utlf_core.is_modular_profile(profile) then
+        return
+    end
+
+    local item_section = obj:section()
+    if not utlf_core.is_utlf_attachment_item(item_section) or not utlf_core.attachment_allowed(profile, item_section) then
+        return
+    end
+
+    local existing = utlf_core.saved_modular_light(weapon)
+    if existing and existing.section == item_section then
+        return
+    end
+
+    if existing then
+        utlf_modular.detach_item(weapon, true)
+    end
+
+    utlf_core.save_modular_light(weapon, item_section)
+    alife_release_id(obj:id())
+    utlf_modular.ensure_attachment(weapon, profile)
+    snd_attach:play(db.actor, 0, sound_object.s2d)
+    printf("[utlf] attached modular tactical light item %s to %s", item_section, weapon:section())
+end
+
+function on_game_start()
+    RegisterScriptCallback("ActorMenu_on_item_drag_drop", ActorMenu_on_item_drag_drop)
+    RegisterScriptCallback("ActorMenu_on_item_focus_receive", ActorMenu_on_item_focus_receive)
+
+    if rax_icon_layers and rax_icon_layers.register then
+        rax_icon_layers.register("utlf_icon_layer", utlf_icon_layer)
+    end
+
+    if custom_functor_autoinject and custom_functor_autoinject.add_functor then
+        custom_functor_autoinject.add_functor("utlf_tactical_light", modular_detach_condition, modular_detach_name, nil, modular_detach_functor, false)
+    end
+end

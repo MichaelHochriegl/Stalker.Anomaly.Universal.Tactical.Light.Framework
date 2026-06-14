@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="windows-1251"?>
+
+<string_table>
+    <string id="st_utlf_tactical_light">
+        <text>Tactical Light Module</text>
+    </string>
+    <string id="st_utlf_tactical_light_descr">
+        <text>Weapon-mounted tactical light module used by Universal Tactical Light Framework compatibility patches. This build uses a temporary laser module mesh as a placeholder.</text>
+    </string>
+    <string id="st_utlf_detach_tactical_light">
+        <text>Detach tactical light</text>
+    </string>
+</string_table>
