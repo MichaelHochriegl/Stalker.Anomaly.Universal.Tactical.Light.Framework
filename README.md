@@ -160,8 +160,10 @@ UTLF avoids `actor_on_update`. Modular attachments are created on HUD draw anima
 - `utlf_profile.script`: profile copying, section normalization, profile normalization, transform parsing, allowed attachment checks, and vector/color helpers.
 - `utlf_registry.script`: registered weapon profiles, attachment groups, profile lookup, and active supported weapon lookup.
 - `utlf_items.script`: modular flashlight item config, saved modular item state, item light profiles, and modular model lookup.
-- `utlf_lights.script`: scripted light lifecycle, built-in carrier attachments, HUD draw repair, save cleanup, and 3DSS magnifier replacement repair.
+- `utlf_lights.script`: scripted light lifecycle, built-in carrier attachments, rebuilds, and save cleanup.
+- `utlf_replacement.script`: 3DSS magnifier replacement wrapping, delayed light transfer, and HUD draw replacement repair.
 - `utlf_input.script`: toggle key handling, vanilla torch suppression, modifier checks, and click sound playback.
 - `utlf_modular.script`: visible modular tactical light attachment creation/removal.
 - `utlf_inventory.script`: inventory drag/drop, attachment highlighting, icon layer, and detach context action.
 - `utlf_mcm.script`: framework MCM page registration.
+- 
