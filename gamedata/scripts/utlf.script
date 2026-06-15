@@ -55,7 +55,9 @@ end
 
 function on_game_start()
     utlf_core.refresh_settings()
+    utlf_input.on_game_start()
     utlf_lights.on_game_start()
+    utlf_replacement.on_game_start()
     utlf_inventory.on_game_start()
 
     RegisterScriptCallback("on_option_change", on_option_change)

@@ -195,8 +195,5 @@ local function save_state()
 end
 
 function on_game_start()
-    utlf_input.on_game_start()
-    utlf_replacement.on_game_start()
-
     RegisterScriptCallback("save_state", save_state)
 end
