@@ -10,15 +10,15 @@ function register_attachment_group(group_name, sections)
     return utlf_core.register_attachment_group(group_name, sections)
 end
 
-local function register_configured_pack(pack_name, profile, config)
+local function register_builtin_light_pack(pack_name, profile, config)
     register_pack(pack_name, { utlf_core.configured_profile(profile, config) })
 end
 
-function setup_configured_pack(pack_name, profile, config)
-    register_configured_pack(pack_name, profile, config)
+function setup_builtin_light_pack(pack_name, profile, config)
+    register_builtin_light_pack(pack_name, profile, config)
 
     RegisterScriptCallback("on_option_change", function()
-        register_configured_pack(pack_name, profile, config)
+        register_builtin_light_pack(pack_name, profile, config)
 
         if not config or config.rebuild_active_light ~= false then
             local weapon = db.actor and db.actor:active_item()

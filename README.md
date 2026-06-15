@@ -50,9 +50,11 @@ local cone_deg = utlf.get_mcm_number("utlf/my_weapon_pack/cone_deg", 24, 8, 60)
 
 `get_mcm_number(path, fallback, min, max)` returns the fallback when MCM is unavailable or the stored value is invalid, and clamps valid values to the provided bounds.
 
-For configurable built-in light profiles, prefer `setup_configured_pack()` so the framework handles MCM reads, profile registration, option-change refresh, and active-light rebuilds:
+For configurable built-in light profiles, prefer `setup_builtin_light_pack()` so the framework handles MCM reads, profile registration, option-change refresh, and active-light rebuilds:
 
 ```lua
+local PACK_NAME = "My Weapon Pack"
+
 local PROFILE = {
     sections = { "wpn_my_weapon", "wpn_my_weapon_alt" },
     mode = "built_in",
@@ -67,8 +69,8 @@ local CONFIG = {
 }
 
 function on_game_start()
-    if utlf and utlf.setup_configured_pack then
-        utlf.setup_configured_pack(PACK_NAME, PROFILE, CONFIG)
+    if utlf and utlf.setup_builtin_light_pack then
+        utlf.setup_builtin_light_pack(PACK_NAME, PROFILE, CONFIG)
     else
         printf("[utlf_my_weapon] compatible framework script not available")
     end
