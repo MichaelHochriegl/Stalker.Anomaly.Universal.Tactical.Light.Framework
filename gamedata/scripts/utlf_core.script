@@ -83,24 +83,11 @@ local function append_unique(list, seen, value)
     end
 end
 
-function list_from_value(value)
-    if not value then
-        return {}
+local function number_at(list, index, fallback)
+    if type(list) ~= "table" then
+        return fallback
     end
-
-    if type(value) == "table" then
-        return value
-    end
-
-    if str_explode then
-        return str_explode(tostring(value), ",")
-    end
-
-    local values = {}
-    for entry in tostring(value):gmatch("[^,]+") do
-        values[#values + 1] = entry
-    end
-    return values
+    return tonumber(list[index]) or fallback
 end
 
 function safe_is_weapon(obj)
@@ -110,6 +97,74 @@ function safe_is_weapon(obj)
 
     local ok, is_weapon = pcall(_G.IsWeapon, obj)
     return ok and is_weapon == true
+end
+
+local function normalize_transform(transform)
+    transform = transform or {}
+    local position = transform.position
+    local rotation = transform.rotation
+
+    return {
+        x = tonumber(transform.x) or number_at(position, 1, 0),
+        y = tonumber(transform.y) or number_at(position, 2, 0),
+        z = tonumber(transform.z) or number_at(position, 3, 0),
+        rx = tonumber(transform.rx) or number_at(rotation, 1, 0),
+        ry = tonumber(transform.ry) or number_at(rotation, 2, 0),
+        rz = tonumber(transform.rz) or number_at(rotation, 3, 0),
+        scale = tonumber(transform.scale) or DEFAULTS.MODULAR_SCALE,
+        bone = transform.bone or 0,
+    }
+end
+
+local function resolve_allowed_attachments(profile, is_modular)
+    local result = {}
+    local seen = {}
+
+    for _, section in ipairs(normalize_sections(profile and profile.allowed_attachments)) do
+        append_unique(result, seen, section)
+    end
+
+    local groups = profile and profile.attachment_groups
+    if not groups and is_modular then
+        groups = { "base" }
+    end
+
+    for _, group_name in ipairs(normalize_sections(groups)) do
+        local group = attachment_groups[trim(group_name)]
+        for _, section in ipairs(normalize_sections(group)) do
+            append_unique(result, seen, section)
+        end
+    end
+
+    return result
+end
+
+function normalize_profile(profile, section)
+    local copy = copy_profile(profile)
+    copy.sections = normalize_sections(profile and profile.sections)
+    copy.section = section
+
+    copy.mode = (profile and profile.mode) or "built_in"
+    copy.is_modular = copy.mode == "modular"
+    copy.allowed_attachments = resolve_allowed_attachments(profile, copy.is_modular)
+    copy.transform = normalize_transform(profile and profile.transform)
+
+    copy.range = tonumber(copy.range) or DEFAULTS.RANGE
+    copy.cone_deg = tonumber(copy.cone_deg) or DEFAULTS.CONE_DEG
+    copy.light_type = tonumber(copy.light_type) or 2
+    copy.hud_mode = copy.hud_mode == true
+    copy.shadow = copy.shadow ~= false
+    copy.volumetric = copy.volumetric == true
+    copy.volumetric_distance = tonumber(copy.volumetric_distance) or 0.25
+    copy.volumetric_intensity = tonumber(copy.volumetric_intensity) or 0.02
+    copy.volumetric_quality = tonumber(copy.volumetric_quality) or 0.25
+    copy.texture = copy.texture or DEFAULTS.TEXTURE
+    copy.light_bone = copy.light_bone or DEFAULTS.LIGHT_BONE
+    copy.fire_point = copy.fire_point or DEFAULTS.FIRE_POINT
+    copy.reattach_delay_ms = tonumber(copy.reattach_delay_ms) or DEFAULTS.REATTACH_DELAY_MS
+    copy.replacement_window_ms = tonumber(copy.replacement_window_ms) or DEFAULTS.REPLACEMENT_WINDOW_MS
+
+    return copy
 end
 
 function profile_supports_section(profile, section)
@@ -140,9 +195,7 @@ function register_light(section, profile)
         return
     end
 
-    local copy = copy_profile(profile)
-    copy.section = section
-    registered[section] = copy
+    registered[section] = normalize_profile(profile, section)
 end
 
 function register_pack(pack_name, profiles)
@@ -159,6 +212,10 @@ function register_attachment_group(group_name, sections)
         return
     end
     attachment_groups[group_name] = normalize_sections(sections)
+
+    for _, profile in pairs(registered) do
+        profile.allowed_attachments = resolve_allowed_attachments(profile, profile.is_modular)
+    end
 end
 
 function config_path(page_id, option_id)
@@ -231,43 +288,12 @@ function active_supported_weapon()
     end
 end
 
-function profile_mode(profile)
-    if not profile then
-        return "built_in"
-    end
-
-    if profile.modular_blacklist == true or profile.no_modular_attachment == true then
-        return "built_in"
-    end
-
-    return profile.attachment_mode or profile.mode or "built_in"
-end
-
 function is_modular_profile(profile)
-    return profile_mode(profile) == "modular"
+    return profile and profile.is_modular == true
 end
 
 function profile_allowed_attachments(profile)
-    local result = {}
-    local seen = {}
-
-    for _, section in ipairs(normalize_sections(profile and (profile.attachments or profile.light_attachments or profile.utlf_lights))) do
-        append_unique(result, seen, section)
-    end
-
-    local groups = profile and (profile.attachment_groups or profile.light_groups or profile.utlf_light_groups)
-    if not groups and is_modular_profile(profile) then
-        groups = { "base" }
-    end
-
-    for _, group_name in ipairs(normalize_sections(groups)) do
-        local group = attachment_groups[trim(group_name)]
-        for _, section in ipairs(normalize_sections(group)) do
-            append_unique(result, seen, section)
-        end
-    end
-
-    return result
+    return (profile and profile.allowed_attachments) or {}
 end
 
 function attachment_allowed(profile, item_section)
@@ -314,16 +340,16 @@ function weapon_hud_section(weapon)
 end
 
 function attachment_model(weapon, profile)
-    local model = profile.attachment_model or profile.model or SYS_GetParam(0, weapon:section(), "visual", nil)
+    local model = profile.model or SYS_GetParam(0, weapon:section(), "visual", nil)
     if not model or model == "" then
-        model = profile.default_model or SYS_GetParam(0, weapon:section(), "visual", weapon:section())
+        model = SYS_GetParam(0, weapon:section(), "visual", weapon:section())
     end
     return strgsub(model, "%.ogf$", "")
 end
 
 function modular_attachment_model(section, profile)
     local model = section and ini_sys:r_string_ex(section, "scripted_model")
-    model = model or (profile and (profile.attachment_model or profile.model)) or DEFAULTS.MODULAR_MODEL
+    model = model or (profile and profile.model) or DEFAULTS.MODULAR_MODEL
     return strgsub(model, "%.ogf$", "")
 end
 
@@ -340,45 +366,6 @@ function color_from(value)
         return color:set(value[1] or 1.0, value[2] or 0.94, value[3] or 0.78, value[4] or 0.55)
     end
     return color:set(1.0, 0.94, 0.78, 0.55)
-end
-
-local function csv_number(value, index, fallback)
-    if type(value) == "table" then
-        return tonumber(value[index]) or fallback
-    end
-
-    if type(value) == "string" then
-        local parts = list_from_value(value)
-        return tonumber(parts[index]) or fallback
-    end
-
-    return fallback
-end
-
-local function profile_number(profile, key, fallback)
-    local value = profile and profile[key]
-    if value ~= nil then
-        return tonumber(value) or fallback
-    end
-    return fallback
-end
-
-function modular_transform(profile)
-    profile = profile or {}
-
-    local pos = profile.attachment_pos or profile.position
-    local rot = profile.attachment_rot or profile.rotation
-
-    return {
-        x = profile_number(profile, "attachment_pos_x", csv_number(pos, 1, 0)),
-        y = profile_number(profile, "attachment_pos_y", csv_number(pos, 2, 0)),
-        z = profile_number(profile, "attachment_pos_z", csv_number(pos, 3, 0)),
-        rx = profile_number(profile, "attachment_rot_x", csv_number(rot, 1, 0)),
-        ry = profile_number(profile, "attachment_rot_y", csv_number(rot, 2, 0)),
-        rz = profile_number(profile, "attachment_rot_z", csv_number(rot, 3, 0)),
-        scale = profile_number(profile, "attachment_scale", DEFAULTS.MODULAR_SCALE),
-        bone = profile.attach_bone or profile.attachment_bone or profile.sl_attach_bone or 0,
-    }
 end
 
 function refresh_settings()

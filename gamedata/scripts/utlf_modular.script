@@ -40,7 +40,7 @@ function ensure_attachment(weapon, profile)
         return nil
     end
 
-    local transform = utlf_core.modular_transform(profile)
+    local transform = profile.transform
     attachment:set_type(profile.attachment_type or d.ATTACHMENT_TYPE_HUD)
     attachment:set_parent_bone(transform.bone)
     attachment:set_position(transform.x, transform.y, transform.z)

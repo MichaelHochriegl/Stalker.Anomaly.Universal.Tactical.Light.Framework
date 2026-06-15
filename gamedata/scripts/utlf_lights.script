@@ -101,25 +101,24 @@ local function create_built_in_attachment(weapon, profile, hud)
 end
 
 local function create_light(attachment, profile)
-    local d = defaults()
     local light = attachment_script_light()
-    light.type = profile.light_type or 2
-    light.range = profile.range or d.RANGE
-    light.hud_mode = profile.hud_mode == true
-    light.shadow = profile.shadow ~= false
-    light.volumetric = profile.volumetric == true
-    light.volumetric_distance = profile.volumetric_distance or 0.25
-    light.volumetric_intensity = profile.volumetric_intensity or 0.02
-    light.volumetric_quality = profile.volumetric_quality or 0.25
-    light.texture = profile.texture or d.TEXTURE
+    light.type = profile.light_type
+    light.range = profile.range
+    light.hud_mode = profile.hud_mode
+    light.shadow = profile.shadow
+    light.volumetric = profile.volumetric
+    light.volumetric_distance = profile.volumetric_distance
+    light.volumetric_intensity = profile.volumetric_intensity
+    light.volumetric_quality = profile.volumetric_quality
+    light.texture = profile.texture
     light.color = utlf_core.color_from(profile.color)
     light:set_position(0, 0, 0)
     light:set_direction(0, 0, 0)
-    light:set_cone(math.rad(profile.cone_deg or d.CONE_DEG))
+    light:set_cone(math.rad(profile.cone_deg))
     light.enabled = true
 
     attachment:attach_light(light)
-    attachment:set_light_bone(profile.light_bone or d.LIGHT_BONE)
+    attachment:set_light_bone(profile.light_bone)
 
     return light
 end
@@ -220,10 +219,9 @@ local function reattach_after_replacement(reason)
 end
 
 local function schedule_reattach_after_replacement(profile, target_section)
-    local d = defaults()
     local s = state()
-    local delay = (profile and profile.reattach_delay_ms) or d.REATTACH_DELAY_MS
-    s.replacement_until = time_global() + delay + ((profile and profile.replacement_window_ms) or d.REPLACEMENT_WINDOW_MS)
+    local delay = profile.reattach_delay_ms
+    s.replacement_until = time_global() + delay + profile.replacement_window_ms
     s.replacement_target_section = target_section
 
     CreateTimeEvent("utlf", "reattach_after_replacement", delay / 1000, function()

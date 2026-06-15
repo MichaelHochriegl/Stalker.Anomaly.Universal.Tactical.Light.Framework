@@ -56,11 +56,13 @@ For common configurable light profiles, prefer `setup_configured_pack()` so the 
 ```lua
 local PROFILE = {
     sections = { "wpn_my_weapon", "wpn_my_weapon_alt" },
-    attachment_mode = "modular",
-    attachment_pos = "0,0,0",
-    attachment_rot = "0,0,0",
-    attachment_scale = 1,
-    attach_bone = 0,
+    mode = "modular",
+    transform = {
+        position = { 0, 0, 0 },
+        rotation = { 0, 0, 0 },
+        scale = 1,
+        bone = 0,
+    },
 }
 
 local CONFIG = {
@@ -88,8 +90,7 @@ end
 Common fields:
 
 - `sections`: weapon section names supported by this profile.
-- `attachment_mode`: `built_in` or `modular`. Defaults to `built_in` for backward compatibility.
-- `modular_blacklist`: when `true`, forces `built_in` mode even if another field tries to enable modular attachments.
+- `mode`: `built_in` or `modular`. Defaults to `built_in`.
 - `shadow`: enables dynamic shadows. Defaults to `true`; set `false` to opt out.
 - `hud_mode`: uses the HUD lighting path when set to `true`. Defaults to `false`.
 - `light_bone`: bone the script light attaches to. Defaults to `wpn_body`.
@@ -98,24 +99,26 @@ Common fields:
 - `color`: `{ r, g, b, a }`. Defaults to warm white.
 - `texture`: light texture. Defaults to `internal\internal_tactical_torch`.
 - `reattach_delay_ms`: delay after object replacement. Defaults to `250`.
-- `pre_replacement_delay_ms`: delay after known magnifier replacement. Defaults to `400`.
 - `replacement_window_ms`: maximum time after a known replacement where reattaching is allowed. Defaults to `1000`.
+
+Profiles are normalized when registered. The framework expects canonical profile fields; old aliases are intentionally not supported while the API is still unpublished.
 
 Built-in-only fields:
 
 - `fire_bone`: HUD bone used as the invisible carrier attachment parent. Defaults to the weapon HUD `fire_bone` or `wpn_body`.
 - `fire_point`: local attachment offset. Defaults to `0,0,0.035`.
-- `attachment_model` or `model`: optional invisible carrier model. Defaults to the weapon `visual` without `.ogf`.
+- `model`: optional invisible carrier model. Defaults to the weapon `visual` without `.ogf`.
 - `attachment_scale`: invisible carrier model scale. Defaults to `0.001`.
 
 Modular-only fields:
 
-- `attachments`: allowed UTLF item sections. Defaults to the framework `base` group, currently `utlf_tactical_light`.
+- `allowed_attachments`: allowed UTLF item sections. Defaults to the framework `base` group, currently `utlf_tactical_light`.
 - `attachment_groups`: allowed framework attachment groups. Defaults to `{ "base" }`.
-- `attachment_pos` or `attachment_pos_x/y/z`: visible attachment local position.
-- `attachment_rot` or `attachment_rot_x/y/z`: visible attachment local rotation.
-- `attachment_scale`: visible attachment scale. Defaults to `1`.
-- `attach_bone`, `attachment_bone`, or `sl_attach_bone`: visible attachment parent bone. Defaults to `0`.
+- `transform`: visible attachment transform table.
+- `transform.position`: `{ x, y, z }` visible attachment local position. Defaults to `{ 0, 0, 0 }`.
+- `transform.rotation`: `{ x, y, z }` visible attachment local rotation. Defaults to `{ 0, 0, 0 }`.
+- `transform.scale`: visible attachment scale. Defaults to `1`.
+- `transform.bone`: visible attachment parent bone. Defaults to `0`.
 
 Weapon patches can define additional attachment groups through:
 
@@ -135,7 +138,7 @@ If a weapon profile flickers or is too expensive with shadows enabled, set `shad
 
 Register only weapons you have tested. Automatic detection is intentionally not used because weapon HUD bones, decorative lights, and replacement sections vary too much between mods.
 
-Use `attachment_mode = "modular"` for weapons where the player should attach/detach a flashlight item. Use `attachment_mode = "built_in"` plus `modular_blacklist = true` for weapons that already have a fixed integrated flashlight model or where external flashlight modules should not be allowed.
+Use `mode = "modular"` for weapons where the player should attach/detach a flashlight item. Use `mode = "built_in"` for weapons that already have a fixed integrated flashlight model or where external flashlight modules should not be allowed.
 
 Tactical light state is not transferred across normal weapon switches. The framework only reattaches automatically during a known 3DSS magnifier replacement, where the old weapon object is intentionally swapped for another registered section.
 
