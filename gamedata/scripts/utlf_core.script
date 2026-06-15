@@ -21,75 +21,6 @@ DEFAULTS = {
     REPLACEMENT_WINDOW_MS = 1000,
 }
 
-local registered = {}
-local attachment_groups = {
-    base = { "utlf_tactical_light" },
-}
-local state = {
-    desired_on = false,
-    weapon = nil,
-    weapon_id = nil,
-    section = nil,
-    hud = nil,
-    profile = nil,
-    attachment = nil,
-    attachment_name = nil,
-    attachment_is_modular = false,
-    light = nil,
-    replacement_until = nil,
-    replacement_target_section = nil,
-}
-local settings = {
-    toggle_key = DEFAULTS.TOGGLE_KEY,
-    toggle_modifier = DEFAULTS.TOGGLE_MODIFIER,
-}
-
-function get_state()
-    return state
-end
-
-function get_settings()
-    return settings
-end
-
-function copy_profile(profile)
-    local copy = {}
-    for key, value in pairs(profile or {}) do
-        copy[key] = value
-    end
-    return copy
-end
-
-function normalize_sections(sections)
-    if type(sections) == "string" then
-        return { sections }
-    end
-    return sections or {}
-end
-
-local function trim(value)
-    if not value then
-        return nil
-    end
-    value = tostring(value)
-    return (value:gsub("^%s+", ""):gsub("%s+$", ""))
-end
-
-local function append_unique(list, seen, value)
-    value = trim(value)
-    if value and value ~= "" and not seen[value] then
-        seen[value] = true
-        list[#list + 1] = value
-    end
-end
-
-local function number_at(list, index, fallback)
-    if type(list) ~= "table" then
-        return fallback
-    end
-    return tonumber(list[index]) or fallback
-end
-
 function safe_is_weapon(obj)
     if not obj then
         return false
@@ -97,150 +28,6 @@ function safe_is_weapon(obj)
 
     local ok, is_weapon = pcall(_G.IsWeapon, obj)
     return ok and is_weapon == true
-end
-
-local function normalize_transform(transform)
-    transform = transform or {}
-    local position = transform.position
-    local rotation = transform.rotation
-
-    return {
-        x = tonumber(transform.x) or number_at(position, 1, 0),
-        y = tonumber(transform.y) or number_at(position, 2, 0),
-        z = tonumber(transform.z) or number_at(position, 3, 0),
-        rx = tonumber(transform.rx) or number_at(rotation, 1, 0),
-        ry = tonumber(transform.ry) or number_at(rotation, 2, 0),
-        rz = tonumber(transform.rz) or number_at(rotation, 3, 0),
-        scale = tonumber(transform.scale) or DEFAULTS.MODULAR_SCALE,
-        bone = transform.bone or 0,
-    }
-end
-
-local function resolve_allowed_attachments(profile, is_modular)
-    local result = {}
-    local seen = {}
-
-    for _, section in ipairs(normalize_sections(profile and profile.allowed_attachments)) do
-        append_unique(result, seen, section)
-    end
-
-    local groups = profile and profile.attachment_groups
-    if not groups and is_modular then
-        groups = { "base" }
-    end
-
-    for _, group_name in ipairs(normalize_sections(groups)) do
-        local group = attachment_groups[trim(group_name)]
-        for _, section in ipairs(normalize_sections(group)) do
-            append_unique(result, seen, section)
-        end
-    end
-
-    return result
-end
-
-function normalize_profile(profile, section)
-    local copy = copy_profile(profile)
-    copy.sections = normalize_sections(profile and profile.sections)
-    copy.section = section
-
-    copy.mode = (profile and profile.mode) or "built_in"
-    copy.is_modular = copy.mode == "modular"
-    copy.allowed_attachments = resolve_allowed_attachments(profile, copy.is_modular)
-    copy.transform = normalize_transform(profile and profile.transform)
-
-    copy.range = tonumber(copy.range) or DEFAULTS.RANGE
-    copy.cone_deg = tonumber(copy.cone_deg) or DEFAULTS.CONE_DEG
-    copy.light_type = tonumber(copy.light_type) or 2
-    copy.hud_mode = copy.hud_mode == true
-    copy.shadow = copy.shadow ~= false
-    copy.volumetric = copy.volumetric == true
-    copy.volumetric_distance = tonumber(copy.volumetric_distance) or 0.25
-    copy.volumetric_intensity = tonumber(copy.volumetric_intensity) or 0.02
-    copy.volumetric_quality = tonumber(copy.volumetric_quality) or 0.25
-    copy.texture = copy.texture or DEFAULTS.TEXTURE
-    copy.light_bone = copy.light_bone or DEFAULTS.LIGHT_BONE
-    copy.fire_point = copy.fire_point or DEFAULTS.FIRE_POINT
-    copy.reattach_delay_ms = tonumber(copy.reattach_delay_ms) or DEFAULTS.REATTACH_DELAY_MS
-    copy.replacement_window_ms = tonumber(copy.replacement_window_ms) or DEFAULTS.REPLACEMENT_WINDOW_MS
-
-    return copy
-end
-
-local function section_number(section, field, fallback)
-    local value = ini_sys:r_string_ex(section, field)
-    if value == nil then
-        return fallback
-    end
-    return tonumber(value) or fallback
-end
-
-local function section_bool(section, field, fallback)
-    local value = ini_sys:r_string_ex(section, field)
-    if value == nil then
-        return fallback
-    end
-    value = tostring(value)
-    return value == "true" or value == "1"
-end
-
-local function section_string(section, field, fallback)
-    local value = ini_sys:r_string_ex(section, field)
-    if value == nil or value == "" then
-        return fallback
-    end
-    return value
-end
-
-function profile_supports_section(profile, section)
-    if not profile or not section then
-        return false
-    end
-
-    for _, supported_section in ipairs(normalize_sections(profile.sections)) do
-        if supported_section == section then
-            return true
-        end
-    end
-
-    local parent = ini_sys:r_string_ex(section, "parent_section")
-    if parent then
-        for _, supported_section in ipairs(normalize_sections(profile.sections)) do
-            if supported_section == parent then
-                return true
-            end
-        end
-    end
-
-    return false
-end
-
-function register_light(section, profile)
-    if not section or type(profile) ~= "table" then
-        return
-    end
-
-    registered[section] = normalize_profile(profile, section)
-end
-
-function register_pack(pack_name, profiles)
-    for _, profile in ipairs(profiles or {}) do
-        for _, section in ipairs(normalize_sections(profile.sections)) do
-            register_light(section, profile)
-            printf("[utlf] registered %s from %s", section, tostring(pack_name or "unknown pack"))
-        end
-    end
-end
-
-function register_attachment_group(group_name, sections)
-    if not group_name then
-        return
-    end
-    attachment_groups[group_name] = normalize_sections(sections)
-
-    for _, profile in pairs(registered) do
-        profile.allowed_attachments = resolve_allowed_attachments(profile, profile.is_modular)
-    end
 end
 
 function config_path(page_id, option_id)
@@ -272,7 +59,7 @@ function get_mcm_number(path, fallback, min_value, max_value)
 end
 
 function configured_profile(profile, config)
-    local copy = copy_profile(profile)
+    local copy = utlf_profile.copy_profile(profile)
     local page_id = config and (config.page_id or config.page)
     local numbers = config and config.numbers
 
@@ -287,115 +74,6 @@ function configured_profile(profile, config)
     return copy
 end
 
-function profile_for_section(section)
-    if not section then
-        return nil
-    end
-
-    local profile = registered[section]
-    if profile then
-        return profile
-    end
-
-    local parent = ini_sys:r_string_ex(section, "parent_section")
-    if parent then
-        return registered[parent]
-    end
-end
-
-function active_supported_weapon()
-    local item = db.actor and db.actor:active_item()
-    if item and safe_is_weapon(item) then
-        local profile = profile_for_section(item:section())
-        if profile then
-            return item, profile
-        end
-    end
-end
-
-function is_modular_profile(profile)
-    return profile and profile.is_modular == true
-end
-
-function profile_allowed_attachments(profile)
-    return (profile and profile.allowed_attachments) or {}
-end
-
-function light_profile_for_item(item_section)
-    local copy = {
-        light_type = 2,
-        range = DEFAULTS.RANGE,
-        cone_deg = DEFAULTS.CONE_DEG,
-        hud_mode = false,
-        shadow = true,
-        volumetric = false,
-        volumetric_distance = 0.25,
-        volumetric_intensity = 0.02,
-        volumetric_quality = 0.25,
-        texture = DEFAULTS.TEXTURE,
-        color = nil,
-        light_bone = DEFAULTS.LIGHT_BONE,
-    }
-
-    if not item_section then
-        return copy
-    end
-
-    copy.light_type = section_number(item_section, "light_type", copy.light_type)
-    copy.range = section_number(item_section, "light_range", copy.range)
-    copy.cone_deg = section_number(item_section, "light_cone_deg", copy.cone_deg)
-    copy.hud_mode = section_bool(item_section, "light_hud_mode", copy.hud_mode)
-    copy.shadow = section_bool(item_section, "light_shadow", copy.shadow)
-    copy.volumetric = section_bool(item_section, "light_volumetric", copy.volumetric)
-    copy.volumetric_distance = section_number(item_section, "light_volumetric_distance", copy.volumetric_distance)
-    copy.volumetric_intensity = section_number(item_section, "light_volumetric_intensity", copy.volumetric_intensity)
-    copy.volumetric_quality = section_number(item_section, "light_volumetric_quality", copy.volumetric_quality)
-    copy.texture = section_string(item_section, "light_texture", copy.texture)
-    copy.color = section_string(item_section, "light_color", copy.color)
-    copy.light_bone = section_string(item_section, "light_bone", copy.light_bone)
-
-    return copy
-end
-
-function attachment_allowed(profile, item_section)
-    for _, section in ipairs(profile_allowed_attachments(profile)) do
-        if section == item_section then
-            return true
-        end
-    end
-    return false
-end
-
-function is_utlf_attachment_item(section)
-    return ini_sys:r_string_ex(section, "utlf_light_attachment") == "true"
-        or ini_sys:r_bool_ex(section, "utlf_light_attachment") == true
-end
-
-function saved_modular_light(weapon)
-    if not weapon then
-        return nil
-    end
-    return se_load_var(weapon:id(), weapon:name(), DEFAULTS.MODULAR_VAR)
-end
-
-function save_modular_light(weapon, section)
-    if not weapon or not section then
-        return
-    end
-
-    se_save_var(weapon:id(), weapon:name(), DEFAULTS.MODULAR_VAR, {
-        section = section,
-        icon_layer = ini_sys:r_string_ex(section, "attachment_icon_layer"),
-    })
-end
-
-function clear_modular_light(weapon)
-    if not weapon then
-        return
-    end
-    se_save_var(weapon:id(), weapon:name(), DEFAULTS.MODULAR_VAR, nil)
-end
-
 function weapon_hud_section(weapon)
     return SYS_GetParam(0, weapon:section(), "hud", weapon:section())
 end
@@ -408,62 +86,110 @@ function attachment_model(weapon, profile)
     return strgsub(model, "%.ogf$", "")
 end
 
-function modular_attachment_model(section, profile)
-    local model = section and ini_sys:r_string_ex(section, "scripted_model")
-    model = model or (profile and profile.model) or DEFAULTS.MODULAR_MODEL
-    return strgsub(model, "%.ogf$", "")
+function get_state()
+    return utlf_state.get_state()
 end
 
-function vector_from(value, fallback)
-    if type(value) == "userdata" then
-        return value
-    end
-    return utils_data.string_to_vector(value or fallback)
-end
-
-function color_from(value)
-    local color = fcolor()
-    if type(value) == "table" then
-        return color:set(value[1] or 1.0, value[2] or 0.94, value[3] or 0.78, value[4] or 0.55)
-    elseif type(value) == "string" then
-        local values = {}
-        for entry in value:gmatch("[^,]+") do
-            values[#values + 1] = tonumber(trim(entry))
-        end
-        return color:set(values[1] or 1.0, values[2] or 0.94, values[3] or 0.78, values[4] or 0.55)
-    end
-    return color:set(1.0, 0.94, 0.78, 0.55)
+function get_settings()
+    return utlf_state.get_settings()
 end
 
 function refresh_settings()
-    if not ui_mcm then
-        return
-    end
-
-    settings.toggle_key = tonumber(ui_mcm.get("utlf/framework/toggle_key")) or tonumber(ui_mcm.get("utlf/toggle_key")) or DEFAULTS.TOGGLE_KEY
-    settings.toggle_modifier = tonumber(ui_mcm.get("utlf/framework/toggle_modifier")) or tonumber(ui_mcm.get("utlf/toggle_modifier")) or DEFAULTS.TOGGLE_MODIFIER
+    return utlf_state.refresh_settings()
 end
 
 function state_weapon()
-    if not state.weapon_id then
-        return nil
-    end
-
-    local obj = get_object_by_id(state.weapon_id)
-    if obj and safe_is_weapon(obj) then
-        return obj
-    end
+    return utlf_state.state_weapon()
 end
 
 function clear_replacement()
-    state.replacement_until = nil
-    state.replacement_target_section = nil
+    return utlf_state.clear_replacement()
 end
 
 function replacement_pending()
-    return state.replacement_until and time_global() <= state.replacement_until
+    return utlf_state.replacement_pending()
+end
+
+function copy_profile(profile)
+    return utlf_profile.copy_profile(profile)
+end
+
+function normalize_sections(sections)
+    return utlf_profile.normalize_sections(sections)
+end
+
+function normalize_profile(profile, section)
+    return utlf_profile.normalize_profile(profile, section)
+end
+
+function profile_supports_section(profile, section)
+    return utlf_profile.profile_supports_section(profile, section)
+end
+
+function is_modular_profile(profile)
+    return utlf_profile.is_modular_profile(profile)
+end
+
+function profile_allowed_attachments(profile)
+    return utlf_profile.profile_allowed_attachments(profile)
+end
+
+function attachment_allowed(profile, item_section)
+    return utlf_profile.attachment_allowed(profile, item_section)
+end
+
+function vector_from(value, fallback)
+    return utlf_profile.vector_from(value, fallback)
+end
+
+function color_from(value)
+    return utlf_profile.color_from(value)
+end
+
+function register_light(section, profile)
+    return utlf_registry.register_light(section, profile)
+end
+
+function register_pack(pack_name, profiles)
+    return utlf_registry.register_pack(pack_name, profiles)
+end
+
+function register_attachment_group(group_name, sections)
+    return utlf_registry.register_attachment_group(group_name, sections)
+end
+
+function profile_for_section(section)
+    return utlf_registry.profile_for_section(section)
+end
+
+function active_supported_weapon()
+    return utlf_registry.active_supported_weapon()
 end
 
 function loaded_sections_count()
-    return tostring(table.size and table.size(registered) or "unknown")
+    return utlf_registry.loaded_sections_count()
+end
+
+function light_profile_for_item(item_section)
+    return utlf_items.light_profile_for_item(item_section)
+end
+
+function is_utlf_attachment_item(section)
+    return utlf_items.is_utlf_attachment_item(section)
+end
+
+function saved_modular_light(weapon)
+    return utlf_items.saved_modular_light(weapon)
+end
+
+function save_modular_light(weapon, section)
+    return utlf_items.save_modular_light(weapon, section)
+end
+
+function clear_modular_light(weapon)
+    return utlf_items.clear_modular_light(weapon)
+end
+
+function modular_attachment_model(section, profile)
+    return utlf_items.modular_attachment_model(section, profile)
 end

@@ -1,0 +1,103 @@
+local strgsub = string.gsub
+
+local function defaults()
+    return utlf_core.DEFAULTS
+end
+
+local function section_number(section, field, fallback)
+    local value = ini_sys:r_string_ex(section, field)
+    if value == nil then
+        return fallback
+    end
+    return tonumber(value) or fallback
+end
+
+local function section_bool(section, field, fallback)
+    local value = ini_sys:r_string_ex(section, field)
+    if value == nil then
+        return fallback
+    end
+    value = tostring(value)
+    return value == "true" or value == "1"
+end
+
+local function section_string(section, field, fallback)
+    local value = ini_sys:r_string_ex(section, field)
+    if value == nil or value == "" then
+        return fallback
+    end
+    return value
+end
+
+function light_profile_for_item(item_section)
+    local d = defaults()
+    local copy = {
+        light_type = 2,
+        range = d.RANGE,
+        cone_deg = d.CONE_DEG,
+        hud_mode = false,
+        shadow = true,
+        volumetric = false,
+        volumetric_distance = 0.25,
+        volumetric_intensity = 0.02,
+        volumetric_quality = 0.25,
+        texture = d.TEXTURE,
+        color = nil,
+        light_bone = d.LIGHT_BONE,
+    }
+
+    if not item_section then
+        return copy
+    end
+
+    copy.light_type = section_number(item_section, "light_type", copy.light_type)
+    copy.range = section_number(item_section, "light_range", copy.range)
+    copy.cone_deg = section_number(item_section, "light_cone_deg", copy.cone_deg)
+    copy.hud_mode = section_bool(item_section, "light_hud_mode", copy.hud_mode)
+    copy.shadow = section_bool(item_section, "light_shadow", copy.shadow)
+    copy.volumetric = section_bool(item_section, "light_volumetric", copy.volumetric)
+    copy.volumetric_distance = section_number(item_section, "light_volumetric_distance", copy.volumetric_distance)
+    copy.volumetric_intensity = section_number(item_section, "light_volumetric_intensity", copy.volumetric_intensity)
+    copy.volumetric_quality = section_number(item_section, "light_volumetric_quality", copy.volumetric_quality)
+    copy.texture = section_string(item_section, "light_texture", copy.texture)
+    copy.color = section_string(item_section, "light_color", copy.color)
+    copy.light_bone = section_string(item_section, "light_bone", copy.light_bone)
+
+    return copy
+end
+
+function is_utlf_attachment_item(section)
+    return ini_sys:r_string_ex(section, "utlf_light_attachment") == "true"
+        or ini_sys:r_bool_ex(section, "utlf_light_attachment") == true
+end
+
+function saved_modular_light(weapon)
+    if not weapon then
+        return nil
+    end
+    return se_load_var(weapon:id(), weapon:name(), defaults().MODULAR_VAR)
+end
+
+function save_modular_light(weapon, section)
+    if not weapon or not section then
+        return
+    end
+
+    se_save_var(weapon:id(), weapon:name(), defaults().MODULAR_VAR, {
+        section = section,
+        icon_layer = ini_sys:r_string_ex(section, "attachment_icon_layer"),
+    })
+end
+
+function clear_modular_light(weapon)
+    if not weapon then
+        return
+    end
+    se_save_var(weapon:id(), weapon:name(), defaults().MODULAR_VAR, nil)
+end
+
+function modular_attachment_model(section, profile)
+    local model = section and ini_sys:r_string_ex(section, "scripted_model")
+    model = model or (profile and profile.model) or defaults().MODULAR_MODEL
+    return strgsub(model, "%.ogf$", "")
+end

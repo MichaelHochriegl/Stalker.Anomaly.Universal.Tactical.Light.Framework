@@ -1,0 +1,175 @@
+local function defaults()
+    return utlf_core.DEFAULTS
+end
+
+local function trim(value)
+    if not value then
+        return nil
+    end
+    value = tostring(value)
+    return (value:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local function append_unique(list, seen, value)
+    value = trim(value)
+    if value and value ~= "" and not seen[value] then
+        seen[value] = true
+        list[#list + 1] = value
+    end
+end
+
+local function number_at(list, index, fallback)
+    if type(list) ~= "table" then
+        return fallback
+    end
+    return tonumber(list[index]) or fallback
+end
+
+local function normalize_transform(transform)
+    local d = defaults()
+    transform = transform or {}
+    local position = transform.position
+    local rotation = transform.rotation
+
+    return {
+        x = tonumber(transform.x) or number_at(position, 1, 0),
+        y = tonumber(transform.y) or number_at(position, 2, 0),
+        z = tonumber(transform.z) or number_at(position, 3, 0),
+        rx = tonumber(transform.rx) or number_at(rotation, 1, 0),
+        ry = tonumber(transform.ry) or number_at(rotation, 2, 0),
+        rz = tonumber(transform.rz) or number_at(rotation, 3, 0),
+        scale = tonumber(transform.scale) or d.MODULAR_SCALE,
+        bone = transform.bone or 0,
+    }
+end
+
+function copy_profile(profile)
+    local copy = {}
+    for key, value in pairs(profile or {}) do
+        copy[key] = value
+    end
+    return copy
+end
+
+function normalize_sections(sections)
+    if type(sections) == "string" then
+        return { sections }
+    end
+    return sections or {}
+end
+
+function resolve_allowed_attachments(profile, is_modular, attachment_groups)
+    local result = {}
+    local seen = {}
+
+    local explicit_sections = profile and (profile._utlf_allowed_attachments_source or profile.allowed_attachments)
+    for _, section in ipairs(normalize_sections(explicit_sections)) do
+        append_unique(result, seen, section)
+    end
+
+    local groups = profile and (profile._utlf_attachment_groups_source or profile.attachment_groups)
+    if not groups and is_modular then
+        groups = { "base" }
+    end
+
+    for _, group_name in ipairs(normalize_sections(groups)) do
+        local group = attachment_groups and attachment_groups[trim(group_name)]
+        for _, section in ipairs(normalize_sections(group)) do
+            append_unique(result, seen, section)
+        end
+    end
+
+    return result
+end
+
+function normalize_profile(profile, section, attachment_groups)
+    local d = defaults()
+    local copy = copy_profile(profile)
+    copy.sections = normalize_sections(profile and profile.sections)
+    copy.section = section
+    copy._utlf_allowed_attachments_source = profile and (profile._utlf_allowed_attachments_source or profile.allowed_attachments)
+    copy._utlf_attachment_groups_source = profile and (profile._utlf_attachment_groups_source or profile.attachment_groups)
+
+    copy.mode = (profile and profile.mode) or "built_in"
+    copy.is_modular = copy.mode == "modular"
+    copy.allowed_attachments = resolve_allowed_attachments(copy, copy.is_modular, attachment_groups)
+    copy.transform = normalize_transform(profile and profile.transform)
+
+    copy.range = tonumber(copy.range) or d.RANGE
+    copy.cone_deg = tonumber(copy.cone_deg) or d.CONE_DEG
+    copy.light_type = tonumber(copy.light_type) or 2
+    copy.hud_mode = copy.hud_mode == true
+    copy.shadow = copy.shadow ~= false
+    copy.volumetric = copy.volumetric == true
+    copy.volumetric_distance = tonumber(copy.volumetric_distance) or 0.25
+    copy.volumetric_intensity = tonumber(copy.volumetric_intensity) or 0.02
+    copy.volumetric_quality = tonumber(copy.volumetric_quality) or 0.25
+    copy.texture = copy.texture or d.TEXTURE
+    copy.light_bone = copy.light_bone or d.LIGHT_BONE
+    copy.fire_point = copy.fire_point or d.FIRE_POINT
+    copy.reattach_delay_ms = tonumber(copy.reattach_delay_ms) or d.REATTACH_DELAY_MS
+    copy.replacement_window_ms = tonumber(copy.replacement_window_ms) or d.REPLACEMENT_WINDOW_MS
+
+    return copy
+end
+
+function profile_supports_section(profile, section)
+    if not profile or not section then
+        return false
+    end
+
+    for _, supported_section in ipairs(normalize_sections(profile.sections)) do
+        if supported_section == section then
+            return true
+        end
+    end
+
+    local parent = ini_sys:r_string_ex(section, "parent_section")
+    if parent then
+        for _, supported_section in ipairs(normalize_sections(profile.sections)) do
+            if supported_section == parent then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+function is_modular_profile(profile)
+    return profile and profile.is_modular == true
+end
+
+function profile_allowed_attachments(profile)
+    return (profile and profile.allowed_attachments) or {}
+end
+
+function attachment_allowed(profile, item_section)
+    for _, section in ipairs(profile_allowed_attachments(profile)) do
+        if section == item_section then
+            return true
+        end
+    end
+    return false
+end
+
+function vector_from(value, fallback)
+    if type(value) == "userdata" then
+        return value
+    end
+    return utils_data.string_to_vector(value or fallback)
+end
+
+function color_from(value)
+    local color = fcolor()
+    if type(value) == "table" then
+        return color:set(value[1] or 1.0, value[2] or 0.94, value[3] or 0.78, value[4] or 0.55)
+    elseif type(value) == "string" then
+        local values = {}
+        for entry in value:gmatch("[^,]+") do
+            values[#values + 1] = tonumber(trim(entry))
+        end
+        return color:set(values[1] or 1.0, values[2] or 0.94, values[3] or 0.78, values[4] or 0.55)
+    end
+    return color:set(1.0, 0.94, 0.78, 0.55)
+end
