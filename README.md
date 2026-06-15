@@ -23,8 +23,7 @@ UTLF provides a real inventory addon item:
 
 For modular weapon profiles, drag this item onto a supported weapon in the inventory. UTLF stores the attached item on that specific weapon, adds an inventory icon layer, creates a visible scripted attachment model when the weapon is drawn, and returns the item when detached through the inventory context menu.
 
-The current item uses a temporary PEQ/laser mesh and icon placeholder. Replace those assets with real flashlight assets before publishing if you do not have redistribution permission for the placeholder files.
-
+The current item uses a temporary PEQ/laser mesh and icon placeholder.
 ## MCM Pages
 
 Compatibility patches can add their own pages under the shared `Universal Tactical Light Framework` MCM entry by returning their MCM page with the collection name `"utlf"`:
@@ -51,18 +50,12 @@ local cone_deg = utlf.get_mcm_number("utlf/my_weapon_pack/cone_deg", 24, 8, 60)
 
 `get_mcm_number(path, fallback, min, max)` returns the fallback when MCM is unavailable or the stored value is invalid, and clamps valid values to the provided bounds.
 
-For common configurable light profiles, prefer `setup_configured_pack()` so the framework handles MCM reads, profile registration, option-change refresh, and active-light rebuilds:
+For configurable built-in light profiles, prefer `setup_configured_pack()` so the framework handles MCM reads, profile registration, option-change refresh, and active-light rebuilds:
 
 ```lua
 local PROFILE = {
     sections = { "wpn_my_weapon", "wpn_my_weapon_alt" },
-    mode = "modular",
-    transform = {
-        position = { 0, 0, 0 },
-        rotation = { 0, 0, 0 },
-        scale = 1,
-        bone = 0,
-    },
+    mode = "built_in",
 }
 
 local CONFIG = {
@@ -82,7 +75,7 @@ function on_game_start()
 end
 ```
 
-`CONFIG.page` is the MCM namespace for that weapon patch. Use a unique value per compatibility patch so each weapon pack stores its own `range`, `cone_deg`, and future options independently.
+`CONFIG.page` is the MCM namespace for that weapon patch. Use a unique value per compatibility patch so each built-in weapon pack stores its own `range`, `cone_deg`, and future options independently. Modular flashlight emitter values belong on the flashlight item section instead, not on the weapon patch profile.
 
 
 ## Profile Fields
@@ -91,17 +84,8 @@ Common fields:
 
 - `sections`: weapon section names supported by this profile.
 - `mode`: `built_in` or `modular`. Defaults to `built_in`.
-- `shadow`: enables dynamic shadows. Defaults to `true`; set `false` to opt out.
-- `hud_mode`: uses the HUD lighting path when set to `true`. Defaults to `false`.
-- `light_bone`: bone the script light attaches to. Defaults to `wpn_body`.
-- `range`: light range. Defaults to `26`.
-- `cone_deg`: spot cone angle in degrees. Defaults to `24`.
-- `color`: `{ r, g, b, a }`. Defaults to warm white.
-- `texture`: light texture. Defaults to `internal\internal_tactical_torch`.
 - `reattach_delay_ms`: delay after object replacement. Defaults to `250`.
 - `replacement_window_ms`: maximum time after a known replacement where reattaching is allowed. Defaults to `1000`.
-
-Profiles are normalized when registered. The framework expects canonical profile fields; old aliases are intentionally not supported while the API is still unpublished.
 
 Built-in-only fields:
 
@@ -109,6 +93,13 @@ Built-in-only fields:
 - `fire_point`: local attachment offset. Defaults to `0,0,0.035`.
 - `model`: optional invisible carrier model. Defaults to the weapon `visual` without `.ogf`.
 - `attachment_scale`: invisible carrier model scale. Defaults to `0.001`.
+- `shadow`: enables dynamic shadows. Defaults to `true`; set `false` to opt out.
+- `hud_mode`: uses the HUD lighting path when set to `true`. Defaults to `false`.
+- `light_bone`: bone the script light attaches to. Defaults to `wpn_body`.
+- `range`: light range. Defaults to `26`.
+- `cone_deg`: spot cone angle in degrees. Defaults to `24`.
+- `color`: `{ r, g, b, a }`. Defaults to warm white.
+- `texture`: light texture. Defaults to `internal\internal_tactical_torch`.
 
 Modular-only fields:
 
@@ -120,6 +111,21 @@ Modular-only fields:
 - `transform.scale`: visible attachment scale. Defaults to `1`.
 - `transform.bone`: visible attachment parent bone. Defaults to `0`.
 
+Modular tactical light item fields:
+
+- `scripted_model`: visible model attached to the weapon.
+- `light_bone`: bone inside the scripted model used as the light emitter origin.
+- `light_range`: item-specific light range.
+- `light_cone_deg`: item-specific spot cone angle in degrees.
+- `light_texture`: item-specific light texture.
+- `light_color`: item-specific color as `r,g,b,a`.
+- `light_type`: item-specific light type. Defaults to spot light.
+- `light_shadow`: item-specific dynamic shadow toggle.
+- `light_hud_mode`: item-specific HUD lighting path toggle.
+- `light_volumetric`, `light_volumetric_distance`, `light_volumetric_intensity`, `light_volumetric_quality`: item-specific volumetric settings.
+
+Each modular flashlight item defines its own model and emitter settings. Weapon patches only define which flashlight items are allowed and where they are mounted; modular weapon profiles do not control `range`, `cone_deg`, `texture`, `color`, `light_bone`, or other emitter behavior.
+
 Weapon patches can define additional attachment groups through:
 
 ```lua
@@ -130,9 +136,9 @@ utlf.register_attachment_group("my_pack_lights", { "utlf_tactical_light" })
 
 The framework defaults to `shadow = true` and `hud_mode = false`. This makes the light follow the weapon attachment while using the normal world-lighting path, which is more stable for shadowed weapon lights.
 
-`hud_mode = true` can change lighting and shadow behavior. Use it only if a specific weapon profile has been tested with it.
+`hud_mode = true` can change lighting and shadow behavior. Use it only if a specific built-in profile or modular flashlight item has been tested with it.
 
-If a weapon profile flickers or is too expensive with shadows enabled, set `shadow = false` in that profile.
+If a built-in weapon profile or modular flashlight item flickers or is too expensive with shadows enabled, set its shadow option to `false`.
 
 ## Notes For Weapon Authors
 

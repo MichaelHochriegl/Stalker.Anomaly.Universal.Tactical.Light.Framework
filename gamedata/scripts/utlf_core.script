@@ -167,6 +167,31 @@ function normalize_profile(profile, section)
     return copy
 end
 
+local function section_number(section, field, fallback)
+    local value = ini_sys:r_string_ex(section, field)
+    if value == nil then
+        return fallback
+    end
+    return tonumber(value) or fallback
+end
+
+local function section_bool(section, field, fallback)
+    local value = ini_sys:r_string_ex(section, field)
+    if value == nil then
+        return fallback
+    end
+    value = tostring(value)
+    return value == "true" or value == "1"
+end
+
+local function section_string(section, field, fallback)
+    local value = ini_sys:r_string_ex(section, field)
+    if value == nil or value == "" then
+        return fallback
+    end
+    return value
+end
+
 function profile_supports_section(profile, section)
     if not profile or not section then
         return false
@@ -296,6 +321,42 @@ function profile_allowed_attachments(profile)
     return (profile and profile.allowed_attachments) or {}
 end
 
+function light_profile_for_item(item_section)
+    local copy = {
+        light_type = 2,
+        range = DEFAULTS.RANGE,
+        cone_deg = DEFAULTS.CONE_DEG,
+        hud_mode = false,
+        shadow = true,
+        volumetric = false,
+        volumetric_distance = 0.25,
+        volumetric_intensity = 0.02,
+        volumetric_quality = 0.25,
+        texture = DEFAULTS.TEXTURE,
+        color = nil,
+        light_bone = DEFAULTS.LIGHT_BONE,
+    }
+
+    if not item_section then
+        return copy
+    end
+
+    copy.light_type = section_number(item_section, "light_type", copy.light_type)
+    copy.range = section_number(item_section, "light_range", copy.range)
+    copy.cone_deg = section_number(item_section, "light_cone_deg", copy.cone_deg)
+    copy.hud_mode = section_bool(item_section, "light_hud_mode", copy.hud_mode)
+    copy.shadow = section_bool(item_section, "light_shadow", copy.shadow)
+    copy.volumetric = section_bool(item_section, "light_volumetric", copy.volumetric)
+    copy.volumetric_distance = section_number(item_section, "light_volumetric_distance", copy.volumetric_distance)
+    copy.volumetric_intensity = section_number(item_section, "light_volumetric_intensity", copy.volumetric_intensity)
+    copy.volumetric_quality = section_number(item_section, "light_volumetric_quality", copy.volumetric_quality)
+    copy.texture = section_string(item_section, "light_texture", copy.texture)
+    copy.color = section_string(item_section, "light_color", copy.color)
+    copy.light_bone = section_string(item_section, "light_bone", copy.light_bone)
+
+    return copy
+end
+
 function attachment_allowed(profile, item_section)
     for _, section in ipairs(profile_allowed_attachments(profile)) do
         if section == item_section then
@@ -364,6 +425,12 @@ function color_from(value)
     local color = fcolor()
     if type(value) == "table" then
         return color:set(value[1] or 1.0, value[2] or 0.94, value[3] or 0.78, value[4] or 0.55)
+    elseif type(value) == "string" then
+        local values = {}
+        for entry in value:gmatch("[^,]+") do
+            values[#values + 1] = tonumber(trim(entry))
+        end
+        return color:set(values[1] or 1.0, values[2] or 0.94, values[3] or 0.78, values[4] or 0.55)
     end
     return color:set(1.0, 0.94, 0.78, 0.55)
 end

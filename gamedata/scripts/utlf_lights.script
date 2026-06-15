@@ -140,24 +140,27 @@ function attach_light(weapon, profile, reason)
         local attachment
         local attachment_name
         local attachment_is_modular = utlf_core.is_modular_profile(profile)
+        local light_profile = profile
 
         if attachment_is_modular then
+            local saved = utlf_core.saved_modular_light(weapon)
             attachment = utlf_modular.ensure_attachment(weapon, profile)
             attachment_name = defaults().MODULAR_ATTACHMENT_NAME
             if not attachment then
                 error("no modular tactical light item attached")
             end
+            light_profile = utlf_core.light_profile_for_item(saved and saved.section)
         else
             attachment, attachment_name = create_built_in_attachment(weapon, profile, hud)
         end
 
-        local light = create_light(attachment, profile)
+        local light = create_light(attachment, light_profile)
 
         s.weapon = weapon
         s.weapon_id = weapon:id()
         s.section = weapon:section()
         s.hud = hud
-        s.profile = profile
+        s.profile = light_profile
         s.attachment = attachment
         s.attachment_name = attachment_name
         s.attachment_is_modular = attachment_is_modular
