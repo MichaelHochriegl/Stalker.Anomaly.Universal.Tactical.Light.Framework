@@ -17,13 +17,13 @@ Generic scripted tactical light framework for S.T.A.L.K.E.R. Anomaly / GAMMA wea
 
 ## Modular Tactical Light Item
 
-UTLF provides a real inventory addon item:
+UTLF provides real inventory addon items:
 
-- `utlf_tactical_light`: Tactical Light Module
+- Rifle/long-gun lights in `utlf_rifles`: `utlf_tactical_light` (M600DF) and `utlf_tactical_light_m300c` (M300C).
+- Pistol lights in `utlf_pistols`: `utlf_tactical_light_x300`, `utlf_tactical_light_foxtrot1`, `utlf_tactical_light_olight`, and `utlf_tactical_light_streamlight`.
+- `base` is retained as a legacy alias for the rifle/long-gun group only.
 
-For modular weapon profiles, drag this item onto a supported weapon in the inventory. UTLF stores the attached item on that specific weapon, adds an inventory icon layer, creates a visible scripted attachment model when the weapon is drawn, and returns the item when detached through the inventory context menu.
-
-The current item uses a temporary PEQ/laser mesh and icon placeholder.
+For modular weapon profiles, drag one of these items onto a supported weapon in the inventory. UTLF stores the attached item on that specific weapon, adds an inventory icon layer, creates a visible scripted attachment model when the weapon is drawn, and returns the item when detached through the inventory context menu.
 ## MCM Pages
 
 Compatibility patches can add their own pages under the shared `Universal Tactical Light Framework` MCM entry by returning their MCM page with the collection name `"utlf"`:
@@ -105,8 +105,8 @@ Built-in-only fields:
 
 Modular-only fields:
 
-- `allowed_attachments`: allowed UTLF item sections. Defaults to the framework `base` group, currently `utlf_tactical_light`.
-- `attachment_groups`: allowed framework attachment groups. Defaults to `{ "base" }`.
+- `allowed_attachments`: allowed UTLF item sections. Use this for weapon-specific exceptions.
+- `attachment_groups`: allowed framework attachment groups. Handgun profiles should use `{ "utlf_pistols" }`; rifles, SMGs/PDWs, shotguns, and other long guns should use `{ "utlf_rifles" }`. Defaults to `{ "base" }`, which is retained as a rifle-compatible legacy alias.
 - `transform`: visible attachment transform table.
 - `transform.position`: `{ x, y, z }` visible attachment local position. Defaults to `{ 0, 0, 0 }`.
 - `transform.rotation`: `{ x, y, z }` visible attachment local rotation. Defaults to `{ 0, 0, 0 }`.
@@ -132,6 +132,18 @@ Weapon patches can define additional attachment groups through:
 
 ```lua
 utlf.register_attachment_group("my_pack_lights", { "utlf_tactical_light" })
+```
+
+Example handgun profile:
+
+```lua
+{ sections = { "wpn_my_pistol" }, mode = "modular", attachment_groups = { "utlf_pistols" }, transform = { position = { 0, 0, 0 }, rotation = { 0, 0, 0 }, scale = 1, bone = 0 } }
+```
+
+Example long-gun profile:
+
+```lua
+{ sections = { "wpn_my_rifle" }, mode = "modular", attachment_groups = { "utlf_rifles" }, transform = { position = { 0, 0, 0 }, rotation = { 0, 0, 0 }, scale = 1, bone = 0 } }
 ```
 
 ## Shadows And HUD Mode

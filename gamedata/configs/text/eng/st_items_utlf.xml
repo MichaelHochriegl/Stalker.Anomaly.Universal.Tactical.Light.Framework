@@ -2,10 +2,40 @@
 
 <string_table>
     <string id="st_utlf_tactical_light">
-        <text>Tactical Light Module</text>
+        <text>M600DF Rifle Light</text>
     </string>
     <string id="st_utlf_tactical_light_descr">
-        <text>Weapon-mounted tactical light module used by Universal Tactical Light Framework compatibility patches. This build uses a temporary laser module mesh as a placeholder.</text>
+        <text>Rifle-pattern weapon light module used by Universal Tactical Light Framework modular long-gun profiles.</text>
+    </string>
+    <string id="st_utlf_tactical_light_m300c">
+        <text>M300C Rifle Light</text>
+    </string>
+    <string id="st_utlf_tactical_light_m300c_descr">
+        <text>Compact rifle-pattern weapon light module used by Universal Tactical Light Framework modular long-gun profiles.</text>
+    </string>
+    <string id="st_utlf_tactical_light_x300">
+        <text>X300 Pistol Light</text>
+    </string>
+    <string id="st_utlf_tactical_light_x300_descr">
+        <text>Pistol-pattern weapon light module used by Universal Tactical Light Framework modular handgun profiles.</text>
+    </string>
+    <string id="st_utlf_tactical_light_foxtrot1">
+        <text>Foxtrot1 Pistol Light</text>
+    </string>
+    <string id="st_utlf_tactical_light_foxtrot1_descr">
+        <text>Compact pistol-pattern weapon light module used by Universal Tactical Light Framework modular handgun profiles.</text>
+    </string>
+    <string id="st_utlf_tactical_light_olight">
+        <text>Olight Pistol Light</text>
+    </string>
+    <string id="st_utlf_tactical_light_olight_descr">
+        <text>Pistol-pattern Olight weapon light module used by Universal Tactical Light Framework modular handgun profiles.</text>
+    </string>
+    <string id="st_utlf_tactical_light_streamlight">
+        <text>Streamlight Pistol Light</text>
+    </string>
+    <string id="st_utlf_tactical_light_streamlight_descr">
+        <text>Pistol-pattern Streamlight weapon light module used by Universal Tactical Light Framework modular handgun profiles.</text>
     </string>
     <string id="st_utlf_detach_tactical_light">
         <text>Detach tactical light</text>

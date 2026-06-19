@@ -1,25 +1,99 @@
 [utlf_tactical_light]:addon
-visual = dynamics\weapons\wpn_addon_world_models\wpn_case_weapon_small_world.ogf
+visual = dynamics\weapons\world\wpn_m600df_world.ogf
 cost = 15000
 inv_name = st_utlf_tactical_light
 inv_name_short = st_utlf_tactical_light
-inv_weight = 0.4
+inv_weight = 0.32
 description = st_utlf_tactical_light_descr
-icons_texture = ui\laser_icons_new
+icons_texture = ui\utlf_light_icons
 inv_grid_width = 1
 inv_grid_height = 1
 inv_grid_x = 0
 inv_grid_y = 0
 repair_type = scope
 utlf_light_attachment = true
-attachment_icon_layer = ui\laser_PEQ15_icons_layer
-scripted_model = anomaly_weapons\ver_laser\wpn_laser_new
-light_bone = wpn_body
+attachment_icon_layer = ui\utlf_light_icon_layers
+scripted_model = dynamics\weapons\wpn_lights_rifle\wpn_m600df
+light_bone = light
 light_range = 36
 light_cone_deg = 32
 light_texture = internal\internal_tactical_torch
 light_color = 1.0,0.94,0.78,0.55
 on_anim = true
 
+[utlf_tactical_light_m300c]:utlf_tactical_light
+visual = dynamics\weapons\world\wpn_m300c_world.ogf
+inv_name = st_utlf_tactical_light_m300c
+inv_name_short = st_utlf_tactical_light_m300c
+description = st_utlf_tactical_light_m300c_descr
+icons_texture = ui\utlf_light_icons
+inv_grid_x = 1
+utlf_light_attachment = true
+attachment_icon_layer = ui\utlf_light_icon_layers
+scripted_model = dynamics\weapons\wpn_lights_rifle\wpn_m300c
+light_bone = light
+
+[utlf_tactical_light_x300]:utlf_tactical_light
+visual = dynamics\weapons\world\wpn_x300_world.ogf
+inv_name = st_utlf_tactical_light_x300
+inv_name_short = st_utlf_tactical_light_x300
+description = st_utlf_tactical_light_x300_descr
+icons_texture = ui\utlf_light_icons
+inv_weight = 0.22
+inv_grid_x = 2
+utlf_light_attachment = true
+attachment_icon_layer = ui\utlf_light_icon_layers
+scripted_model = dynamics\weapons\wpn_lights_pistol\wpn_x300
+light_bone = light
+light_range = 28
+light_cone_deg = 30
+
+[utlf_tactical_light_foxtrot1]:utlf_tactical_light
+visual = dynamics\weapons\world\wpn_foxtrot1_world.ogf
+inv_name = st_utlf_tactical_light_foxtrot1
+inv_name_short = st_utlf_tactical_light_foxtrot1
+description = st_utlf_tactical_light_foxtrot1_descr
+icons_texture = ui\utlf_light_icons
+inv_weight = 0.2
+inv_grid_x = 3
+utlf_light_attachment = true
+attachment_icon_layer = ui\utlf_light_icon_layers
+scripted_model = dynamics\weapons\wpn_lights_pistol\wpn_foxtrot1
+light_bone = light
+light_range = 26
+light_cone_deg = 30
+
+[utlf_tactical_light_olight]:utlf_tactical_light
+visual = dynamics\weapons\world\wpn_olight_world.ogf
+inv_name = st_utlf_tactical_light_olight
+inv_name_short = st_utlf_tactical_light_olight
+description = st_utlf_tactical_light_olight_descr
+icons_texture = ui\utlf_light_icons
+inv_weight = 0.22
+inv_grid_x = 4
+utlf_light_attachment = true
+attachment_icon_layer = ui\utlf_light_icon_layers
+scripted_model = dynamics\weapons\wpn_lights_pistol\wpn_olight
+light_bone = light
+light_range = 30
+light_cone_deg = 32
+
+[utlf_tactical_light_streamlight]:utlf_tactical_light
+visual = dynamics\weapons\world\wpn_streamlight_world.ogf
+inv_name = st_utlf_tactical_light_streamlight
+inv_name_short = st_utlf_tactical_light_streamlight
+description = st_utlf_tactical_light_streamlight_descr
+icons_texture = ui\utlf_light_icons
+inv_weight = 0.24
+inv_grid_x = 5
+utlf_light_attachment = true
+attachment_icon_layer = ui\utlf_light_icon_layers
+scripted_model = dynamics\weapons\wpn_lights_pistol\wpn_streamlight
+light_bone = light
+light_range = 30
+light_cone_deg = 32
+
 [utlf_tactical_light_groups]
-base = utlf_tactical_light
+utlf_rifles = utlf_tactical_light, utlf_tactical_light_m300c
+utlf_pistols = utlf_tactical_light_x300, utlf_tactical_light_foxtrot1, utlf_tactical_light_olight, utlf_tactical_light_streamlight
+base = utlf_rifles
