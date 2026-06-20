@@ -84,6 +84,9 @@ local function ActorMenu_on_item_drag_drop(obj, weapon, no1, no2)
         return
     end
 
+    local s = utlf_core.get_state()
+    local was_on = s.weapon_id == weapon:id() and s.desired_on == true
+
     if existing then
         utlf_modular.detach_item(weapon, true)
     end
@@ -91,6 +94,10 @@ local function ActorMenu_on_item_drag_drop(obj, weapon, no1, no2)
     utlf_core.save_modular_light(weapon, item_section)
     alife_release_id(obj:id())
     utlf_modular.ensure_attachment(weapon, profile)
+    if was_on then
+        s.desired_on = true
+        utlf_lights.attach_light(weapon, profile, "modular tactical light item changed")
+    end
     snd_attach:play(db.actor, 0, sound_object.s2d)
     printf("[utlf] attached modular tactical light item %s to %s", item_section, weapon:section())
 end

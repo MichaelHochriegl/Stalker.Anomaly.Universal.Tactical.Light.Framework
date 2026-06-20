@@ -2,6 +2,8 @@ local strgsub = string.gsub
 
 DEFAULTS = {
     BUILT_IN_ATTACHMENT_NAME = "utlf_tactical_light_attachment",
+    MODULAR_MOUNT_ATTACHMENT_NAME = "utlf_modular_mount",
+    MODULAR_VISIBLE_ATTACHMENT_NAME = "utlf_modular_tactical_light",
     MODULAR_ATTACHMENT_NAME = "utlf_modular_tactical_light",
     MODULAR_VAR = "utlf_tactical_light",
     ATTACHMENT_TYPE_HUD = 0,
@@ -11,8 +13,13 @@ DEFAULTS = {
     LIGHT_BONE = "wpn_body",
     FIRE_POINT = "0,0,0.035",
     ATTACHMENT_SCALE = 0.001,
+    MODULAR_MOUNT_MODEL = "dynamics\\weapons\\wpn_lights_rifle\\wpn_m600df",
     MODULAR_MODEL = "dynamics\\weapons\\wpn_lights_rifle\\wpn_m600df",
     MODULAR_SCALE = 1,
+    LIGHT_DIRECTION = "0,0,0",
+    RIFLE_MOUNT_CLASS = "rifle_side",
+    PISTOL_MOUNT_CLASS = "pistol_underbarrel",
+    DEFAULT_MOUNT_CLASS = "rifle_side",
     RANGE = 26,
     CONE_DEG = 24,
     TEXTURE = "internal\\internal_tactical_torch",
@@ -188,6 +195,18 @@ end
 
 function clear_modular_light(weapon)
     return utlf_items.clear_modular_light(weapon)
+end
+
+function modular_mount_for_item(profile, item_section)
+    return utlf_profile.modular_mount_for_item(profile, item_section)
+end
+
+function modular_light_direction_for_item(profile, item_section, fallback)
+    return utlf_profile.modular_light_direction_for_item(profile, item_section, fallback)
+end
+
+function modular_item_adapter(item_section, mount_class)
+    return utlf_items.modular_item_adapter(item_section, mount_class)
 end
 
 function modular_attachment_model(section, profile)

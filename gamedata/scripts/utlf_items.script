@@ -29,6 +29,49 @@ local function section_string(section, field, fallback)
     return value
 end
 
+local function trim(value)
+    if value == nil then
+        return nil
+    end
+    value = tostring(value)
+    return (value:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local function vector_from_string(value, fallback)
+    fallback = fallback or { x = 0, y = 0, z = 0 }
+    if type(value) == "table" then
+        return {
+            x = tonumber(value.x or value[1]) or fallback.x or fallback[1] or 0,
+            y = tonumber(value.y or value[2]) or fallback.y or fallback[2] or 0,
+            z = tonumber(value.z or value[3]) or fallback.z or fallback[3] or 0,
+        }
+    end
+
+    local values = {}
+    if value ~= nil then
+        for entry in tostring(value):gmatch("[^,]+") do
+            values[#values + 1] = tonumber(trim(entry))
+        end
+    end
+
+    return {
+        x = values[1] or fallback.x or fallback[1] or 0,
+        y = values[2] or fallback.y or fallback[2] or 0,
+        z = values[3] or fallback.z or fallback[3] or 0,
+    }
+end
+
+local function normalize_bone(value)
+    local number_value = tonumber(value)
+    if number_value then
+        return number_value
+    end
+    if value == nil or value == "" then
+        return 0
+    end
+    return tostring(value)
+end
+
 function light_profile_for_item(item_section)
     local d = defaults()
     local copy = {
@@ -44,6 +87,7 @@ function light_profile_for_item(item_section)
         texture = d.TEXTURE,
         color = nil,
         light_bone = d.LIGHT_BONE,
+        light_direction = vector_from_string(d.LIGHT_DIRECTION, { x = 0, y = 0, z = 0 }),
     }
 
     if not item_section then
@@ -62,6 +106,7 @@ function light_profile_for_item(item_section)
     copy.texture = section_string(item_section, "light_texture", copy.texture)
     copy.color = section_string(item_section, "light_color", copy.color)
     copy.light_bone = section_string(item_section, "light_bone", copy.light_bone)
+    copy.light_direction = vector_from_string(section_string(item_section, "light_direction", nil), copy.light_direction)
 
     return copy
 end
@@ -94,6 +139,37 @@ function clear_modular_light(weapon)
         return
     end
     se_save_var(weapon:id(), weapon:name(), defaults().MODULAR_VAR, nil)
+end
+
+function modular_item_adapter(section, mount_class)
+    if not section then
+        return nil
+    end
+
+    local d = defaults()
+    local item_mount_class = section_string(section, "mount_class", nil)
+    if not item_mount_class or item_mount_class == "" then
+        return nil
+    end
+
+    if mount_class and item_mount_class ~= mount_class then
+        return nil
+    end
+
+    local position = vector_from_string(section_string(section, "adapter_position", nil), { x = 0, y = 0, z = 0 })
+    local rotation = vector_from_string(section_string(section, "adapter_rotation", nil), { x = 0, y = 0, z = 0 })
+
+    return {
+        mount_class = item_mount_class,
+        x = position.x,
+        y = position.y,
+        z = position.z,
+        rx = rotation.x,
+        ry = rotation.y,
+        rz = rotation.z,
+        scale = section_number(section, "adapter_scale", d.MODULAR_SCALE),
+        bone = normalize_bone(section_string(section, "adapter_bone", 0)),
+    }
 end
 
 function modular_attachment_model(section, profile)

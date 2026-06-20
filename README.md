@@ -107,16 +107,31 @@ Modular-only fields:
 
 - `allowed_attachments`: allowed UTLF item sections. Use this for weapon-specific exceptions.
 - `attachment_groups`: allowed framework attachment groups. Handgun profiles should use `{ "utlf_pistols" }`; rifles, SMGs/PDWs, shotguns, and other long guns should use `{ "utlf_rifles" }`. Defaults to `{ "base" }`, which is retained as a rifle-compatible legacy alias.
-- `transform`: visible attachment transform table.
-- `transform.position`: `{ x, y, z }` visible attachment local position. Defaults to `{ 0, 0, 0 }`.
-- `transform.rotation`: `{ x, y, z }` visible attachment local rotation. Defaults to `{ 0, 0, 0 }`.
-- `transform.scale`: visible attachment scale. Defaults to `1`.
-- `transform.bone`: visible attachment parent bone. Defaults to `0`.
+- `mount`: weapon mount anchor for the common one-mount case. Modular profiles must define `mount` or `mounts`.
+- `mount.class`: mount compatibility class, such as `rifle_side` or `pistol_underbarrel`.
+- `mount.position`: `{ x, y, z }` root mount local position. Defaults to `{ 0, 0, 0 }`.
+- `mount.rotation`: `{ x, y, z }` root mount local rotation. Defaults to `{ 0, 0, 0 }`.
+- `mount.scale`: root mount scale. Defaults to `1`.
+- `mount.bone`: root mount parent bone. Defaults to `0`.
+- `mount.light_direction`: optional mount-aware beam direction as `{ x, y, z }` in degrees, matching the other rotation fields. Runtime converts these values to radians for `attachment_script_light:set_direction()`. Use this when the same flashlight item needs different beam correction on different weapon mount orientations.
+- `mount.adapters`: optional per-item adapter overrides keyed by item section.
+- `mount.adapters[section].light_direction`: optional item-specific beam direction override for one flashlight on this mount. `mount.adapters.default.light_direction` can provide a default override for all items on the mount.
+- `mounts`: optional future multi-mount table. UTLF picks the first mount whose `class` matches the selected flashlight item's `mount_class`.
+
+Modular attachments use nested script attachments. The weapon receives a hidden root mount carrier at the weapon-defined anchor, then the selected flashlight model is attached as a child using the item adapter transform. Weapon patches define mount anchors; flashlight items define model-specific offsets and beam direction.
+
+For modular lights, runtime beam direction is resolved in this order: `mount.adapters[item_section].light_direction`, `mount.adapters.default.light_direction`, `mount.light_direction`, then the flashlight item's own `light_direction`. Built-in weapon lights do not use this modular mount resolver.
 
 Modular tactical light item fields:
 
-- `scripted_model`: visible model attached to the weapon.
+- `scripted_model`: visible model attached as the child flashlight.
+- `mount_class`: item compatibility class. It must match a weapon mount class.
+- `adapter_position`: item model offset from the root mount as `x,y,z`.
+- `adapter_rotation`: item model rotation from the root mount as `x,y,z`.
+- `adapter_scale`: item model scale from the root mount.
+- `adapter_bone`: root mount carrier bone used as the item adapter parent. Defaults to `0`.
 - `light_bone`: bone inside the scripted model used as the light emitter origin.
+- `light_direction`: item-specific beam direction as `x,y,z` in degrees. Runtime converts these values to radians for `attachment_script_light:set_direction()`. Defaults to `0,0,0`.
 - `light_range`: item-specific light range.
 - `light_cone_deg`: item-specific spot cone angle in degrees.
 - `light_texture`: item-specific light texture.
@@ -126,7 +141,7 @@ Modular tactical light item fields:
 - `light_hud_mode`: item-specific HUD lighting path toggle.
 - `light_volumetric`, `light_volumetric_distance`, `light_volumetric_intensity`, `light_volumetric_quality`: item-specific volumetric settings.
 
-Each modular flashlight item defines its own model and emitter settings. Weapon patches only define which flashlight items are allowed and where they are mounted; modular weapon profiles do not control `range`, `cone_deg`, `texture`, `color`, `light_bone`, or other emitter behavior.
+Each modular flashlight item defines its own model and emitter settings. Weapon patches define which flashlight items are allowed, where they are mounted, and any mount-specific beam direction correction; modular weapon profiles do not control `range`, `cone_deg`, `texture`, `color`, `light_bone`, or other emitter behavior.
 
 Weapon patches can define additional attachment groups through:
 
@@ -137,13 +152,13 @@ utlf.register_attachment_group("my_pack_lights", { "utlf_tactical_light" })
 Example handgun profile:
 
 ```lua
-{ sections = { "wpn_my_pistol" }, mode = "modular", attachment_groups = { "utlf_pistols" }, transform = { position = { 0, 0, 0 }, rotation = { 0, 0, 0 }, scale = 1, bone = 0 } }
+{ sections = { "wpn_my_pistol" }, mode = "modular", attachment_groups = { "utlf_pistols" }, mount = { class = "pistol_underbarrel", position = { 0, 0, 0 }, rotation = { 0, 0, 0 }, scale = 1, bone = 0, light_direction = { 0, 0, 0 } } }
 ```
 
 Example long-gun profile:
 
 ```lua
-{ sections = { "wpn_my_rifle" }, mode = "modular", attachment_groups = { "utlf_rifles" }, transform = { position = { 0, 0, 0 }, rotation = { 0, 0, 0 }, scale = 1, bone = 0 } }
+{ sections = { "wpn_my_rifle" }, mode = "modular", attachment_groups = { "utlf_rifles" }, mount = { class = "rifle_side", position = { 0, 0, 0 }, rotation = { 0, 0, 0 }, scale = 1, bone = 0, light_direction = { 0, 0, 0 } } }
 ```
 
 ## Shadows And HUD Mode
@@ -169,13 +184,13 @@ UTLF avoids `actor_on_update`. Modular attachments are created on HUD draw anima
 - `utlf.script`: small public facade used by compatibility patches.
 - `utlf_core.script`: shared defaults, MCM value helpers, common weapon/model helpers, and compatibility facade for internal modules.
 - `utlf_state.script`: runtime state, MCM key settings, active weapon object lookup, and replacement-window flags.
-- `utlf_profile.script`: profile copying, section normalization, profile normalization, transform parsing, allowed attachment checks, and vector/color helpers.
+- `utlf_profile.script`: profile copying, section normalization, profile normalization, mount parsing/resolution, allowed attachment checks, and vector/color helpers.
 - `utlf_registry.script`: registered weapon profiles, attachment groups, profile lookup, and active supported weapon lookup.
 - `utlf_items.script`: modular flashlight item config, saved modular item state, item light profiles, and modular model lookup.
 - `utlf_lights.script`: scripted light lifecycle, built-in carrier attachments, rebuilds, and save cleanup.
 - `utlf_replacement.script`: 3DSS magnifier replacement wrapping, delayed light transfer, and HUD draw replacement repair.
 - `utlf_input.script`: toggle key handling, vanilla torch suppression, modifier checks, and click sound playback.
-- `utlf_modular.script`: visible modular tactical light attachment creation/removal.
+- `utlf_modular.script`: nested modular mount and visible tactical light attachment creation/removal.
 - `utlf_inventory.script`: inventory drag/drop, attachment highlighting, icon layer, and detach context action.
 - `utlf_mcm.script`: framework MCM page registration.
 - 

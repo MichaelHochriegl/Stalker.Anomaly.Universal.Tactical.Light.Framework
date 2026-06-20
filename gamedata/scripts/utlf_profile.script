@@ -25,22 +25,171 @@ local function number_at(list, index, fallback)
     return tonumber(list[index]) or fallback
 end
 
-local function normalize_transform(transform)
-    local d = defaults()
-    transform = transform or {}
-    local position = transform.position
-    local rotation = transform.rotation
+local function vector_components(value, fallback)
+    fallback = fallback or {}
+
+    if type(value) == "string" then
+        local values = {}
+        for entry in value:gmatch("[^,]+") do
+            values[#values + 1] = tonumber(trim(entry))
+        end
+        value = values
+    end
+
+    if type(value) ~= "table" then
+        value = {}
+    end
 
     return {
-        x = tonumber(transform.x) or number_at(position, 1, 0),
-        y = tonumber(transform.y) or number_at(position, 2, 0),
-        z = tonumber(transform.z) or number_at(position, 3, 0),
-        rx = tonumber(transform.rx) or number_at(rotation, 1, 0),
-        ry = tonumber(transform.ry) or number_at(rotation, 2, 0),
-        rz = tonumber(transform.rz) or number_at(rotation, 3, 0),
-        scale = tonumber(transform.scale) or d.MODULAR_SCALE,
-        bone = transform.bone or 0,
+        x = tonumber(value.x) or number_at(value, 1, fallback.x or fallback[1] or 0),
+        y = tonumber(value.y) or number_at(value, 2, fallback.y or fallback[2] or 0),
+        z = tonumber(value.z) or number_at(value, 3, fallback.z or fallback[3] or 0),
     }
+end
+
+local function normalize_transform_fields(source, default_scale)
+    source = source or {}
+    local position = vector_components(source.position, { 0, 0, 0 })
+    local rotation = vector_components(source.rotation, { 0, 0, 0 })
+
+    return {
+        x = tonumber(source.x) or position.x,
+        y = tonumber(source.y) or position.y,
+        z = tonumber(source.z) or position.z,
+        rx = tonumber(source.rx) or rotation.x,
+        ry = tonumber(source.ry) or rotation.y,
+        rz = tonumber(source.rz) or rotation.z,
+        scale = tonumber(source.scale) or default_scale or 1,
+        bone = source.bone or 0,
+    }
+end
+
+local function normalize_direction_fields(source)
+    if type(source) ~= "table" then
+        return nil
+    end
+
+    local direction = source.light_direction or source.direction
+    if direction == nil then
+        return nil
+    end
+
+    return vector_components(direction, { 0, 0, 0 })
+end
+
+local function normalize_adapter_override(adapter)
+    if type(adapter) ~= "table" then
+        return nil
+    end
+
+    local result = {}
+    local has_value = false
+
+    if adapter.position or adapter.adapter_position or adapter.x or adapter.y or adapter.z then
+        local position = vector_components(adapter.position or adapter.adapter_position, { adapter.x, adapter.y, adapter.z })
+        result.x = tonumber(adapter.x) or position.x
+        result.y = tonumber(adapter.y) or position.y
+        result.z = tonumber(adapter.z) or position.z
+        has_value = true
+    end
+
+    if adapter.rotation or adapter.adapter_rotation or adapter.rx or adapter.ry or adapter.rz then
+        local rotation = vector_components(adapter.rotation or adapter.adapter_rotation, { adapter.rx, adapter.ry, adapter.rz })
+        result.rx = tonumber(adapter.rx) or rotation.x
+        result.ry = tonumber(adapter.ry) or rotation.y
+        result.rz = tonumber(adapter.rz) or rotation.z
+        has_value = true
+    end
+
+    if adapter.scale ~= nil or adapter.adapter_scale ~= nil then
+        result.scale = tonumber(adapter.scale or adapter.adapter_scale) or 1
+        has_value = true
+    end
+
+    if adapter.bone ~= nil or adapter.adapter_bone ~= nil then
+        result.bone = adapter.bone or adapter.adapter_bone
+        has_value = true
+    end
+
+    local direction = normalize_direction_fields(adapter)
+    if direction then
+        result.light_direction = direction
+        has_value = true
+    end
+
+    if has_value then
+        return result
+    end
+    return nil
+end
+
+local function normalize_mount(mount, id)
+    local d = defaults()
+    if type(mount) ~= "table" then
+        return nil
+    end
+
+    local copy = normalize_transform_fields(mount, d.MODULAR_SCALE)
+    copy.id = trim(mount.id) or trim(id)
+    if not copy.id or copy.id == "" then
+        copy.id = "default"
+    end
+
+    copy.class = trim(mount.class)
+    if not copy.class or copy.class == "" then
+        copy.class = d.DEFAULT_MOUNT_CLASS
+    end
+
+    local direction = normalize_direction_fields(mount)
+    if direction then
+        copy.light_direction = direction
+    end
+
+    if type(mount.adapters) == "table" then
+        copy.adapters = {}
+        for item_section, adapter in pairs(mount.adapters) do
+            copy.adapters[item_section] = normalize_adapter_override(adapter)
+        end
+    end
+
+    return copy
+end
+
+local function normalize_mounts(profile)
+    local mounts = {}
+    local seen = {}
+
+    local function append_mount(mount, id)
+        local normalized = normalize_mount(mount, id)
+        if not normalized then
+            return
+        end
+
+        if seen[normalized.id] then
+            return
+        end
+
+        seen[normalized.id] = true
+        mounts[#mounts + 1] = normalized
+    end
+
+    if type(profile and profile.mount) == "table" then
+        append_mount(profile.mount, profile.mount.id or "default")
+    end
+
+    if type(profile and profile.mounts) == "table" then
+        for index, mount in ipairs(profile.mounts) do
+            append_mount(mount, mount and mount.id or tostring(index))
+        end
+
+        for id, mount in pairs(profile.mounts) do
+            if type(id) ~= "number" then
+                append_mount(mount, id)
+            end
+        end
+    end
+
+    return mounts
 end
 
 function copy_profile(profile)
@@ -93,7 +242,19 @@ function normalize_profile(profile, section, attachment_groups)
     copy.mode = (profile and profile.mode) or "built_in"
     copy.is_modular = copy.mode == "modular"
     copy.allowed_attachments = resolve_allowed_attachments(copy, copy.is_modular, attachment_groups)
-    copy.transform = normalize_transform(profile and profile.transform)
+    copy.transform = nil
+
+    if copy.is_modular then
+        copy.mounts = normalize_mounts(profile)
+        copy.mount = copy.mounts[1]
+        if not copy.mount then
+            copy.mount_error = string.format("modular profile for %s is missing required mount or mounts", tostring(section))
+            printf("[utlf] %s", copy.mount_error)
+        end
+    else
+        copy.mount = nil
+        copy.mounts = nil
+    end
 
     copy.range = tonumber(copy.range) or d.RANGE
     copy.cone_deg = tonumber(copy.cone_deg) or d.CONE_DEG
@@ -106,6 +267,7 @@ function normalize_profile(profile, section, attachment_groups)
     copy.volumetric_quality = tonumber(copy.volumetric_quality) or 0.25
     copy.texture = copy.texture or d.TEXTURE
     copy.light_bone = copy.light_bone or d.LIGHT_BONE
+    copy.light_direction = vector_components(copy.light_direction or d.LIGHT_DIRECTION, { 0, 0, 0 })
     copy.fire_point = copy.fire_point or d.FIRE_POINT
     copy.reattach_delay_ms = tonumber(copy.reattach_delay_ms) or d.REATTACH_DELAY_MS
     copy.replacement_window_ms = tonumber(copy.replacement_window_ms) or d.REPLACEMENT_WINDOW_MS
@@ -151,6 +313,81 @@ function attachment_allowed(profile, item_section)
         end
     end
     return false
+end
+
+local function mount_adapter_override(mount, item_section)
+    if not mount or type(mount.adapters) ~= "table" then
+        return nil
+    end
+
+    return mount.adapters[item_section] or mount.adapters.default
+end
+
+local function modular_mount_for_item_internal(profile, item_section, silent)
+    if not is_modular_profile(profile) then
+        return nil
+    end
+
+    if not profile.mounts or #profile.mounts == 0 then
+        if not silent then
+            printf("[utlf] modular profile for %s has no mount for %s", tostring(profile.section), tostring(item_section))
+        end
+        return nil
+    end
+
+    local adapter = utlf_items and utlf_items.modular_item_adapter and utlf_items.modular_item_adapter(item_section)
+    local mount_class = adapter and adapter.mount_class
+    if not mount_class then
+        if not silent then
+            printf("[utlf] modular item %s has no mount_class", tostring(item_section))
+        end
+        return nil
+    end
+
+    for _, mount in ipairs(profile.mounts) do
+        if mount.class == mount_class then
+            return mount, mount_adapter_override(mount, item_section)
+        end
+    end
+
+    if not silent then
+        printf(
+            "[utlf] no compatible modular mount for %s on %s; item requires %s",
+            tostring(item_section),
+            tostring(profile.section),
+            tostring(mount_class)
+        )
+    end
+    return nil
+end
+
+function modular_mount_for_item(profile, item_section)
+    return modular_mount_for_item_internal(profile, item_section, false)
+end
+
+function modular_light_direction_for_item(profile, item_section, fallback)
+    local fallback_direction = vector_components(fallback, { 0, 0, 0 })
+    local mount = modular_mount_for_item_internal(profile, item_section, true)
+    if not mount then
+        return fallback_direction
+    end
+
+    local adapters = type(mount.adapters) == "table" and mount.adapters or nil
+    local item_override = adapters and adapters[item_section] or nil
+    if item_override and item_override.light_direction then
+        return vector_components(item_override.light_direction, fallback_direction)
+    end
+
+    local default_override = adapters and adapters.default or nil
+    if default_override and default_override.light_direction then
+        return vector_components(default_override.light_direction, fallback_direction)
+    end
+
+    if mount.light_direction then
+        return vector_components(mount.light_direction, fallback_direction)
+    end
+
+    return fallback_direction
 end
 
 function vector_from(value, fallback)
