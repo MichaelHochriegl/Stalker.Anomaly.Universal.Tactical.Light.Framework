@@ -64,6 +64,25 @@ local function ActorMenu_on_item_focus_receive(obj)
     end
 end
 
+local function restore_saved_light(weapon, profile, saved, was_on, reason)
+    local s = utlf_core.get_state()
+
+    if saved and saved.section then
+        utlf_core.save_modular_light(weapon, saved.section)
+        utlf_modular.ensure_attachment(weapon, profile)
+        if was_on then
+            s.desired_on = true
+            utlf_lights.attach_light(weapon, profile, reason)
+        end
+    else
+        utlf_core.clear_modular_light(weapon)
+        utlf_modular.ensure_attachment(weapon, profile)
+        if was_on then
+            s.desired_on = false
+        end
+    end
+end
+
 local function ActorMenu_on_item_drag_drop(obj, weapon, no1, no2)
     if not obj or not weapon or not utlf_core.safe_is_weapon(weapon) then
         return
@@ -87,13 +106,29 @@ local function ActorMenu_on_item_drag_drop(obj, weapon, no1, no2)
     local s = utlf_core.get_state()
     local was_on = s.weapon_id == weapon:id() and s.desired_on == true
 
-    if existing then
-        utlf_modular.detach_item(weapon, true)
+    if was_on then
+        utlf_lights.detach_light("modular tactical light item changed", false, true)
     end
 
     utlf_core.save_modular_light(weapon, item_section)
-    alife_release_id(obj:id())
-    utlf_modular.ensure_attachment(weapon, profile)
+    local attachment = utlf_modular.ensure_attachment(weapon, profile)
+    if not attachment then
+        restore_saved_light(weapon, profile, existing, was_on, "modular tactical light item change failed")
+        printf("[utlf] failed to attach modular tactical light item %s to %s", item_section, weapon:section())
+        return
+    end
+
+    local release_ok, release_err = pcall(alife_release_id, obj:id())
+    if not release_ok then
+        restore_saved_light(weapon, profile, existing, was_on, "modular tactical light item change failed")
+        printf("[utlf] failed to consume modular tactical light item %s: %s", item_section, tostring(release_err))
+        return
+    end
+
+    if existing and existing.section then
+        alife_create_item(existing.section, db.actor)
+    end
+
     if was_on then
         s.desired_on = true
         utlf_lights.attach_light(weapon, profile, "modular tactical light item changed")
