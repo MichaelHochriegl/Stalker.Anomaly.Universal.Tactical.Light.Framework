@@ -1,0 +1,65 @@
+local registered = {}
+local attachment_groups = {
+    utlf_rifles = { "utlf_tactical_light", "utlf_tactical_light_m300c" },
+    utlf_pistols = { "utlf_tactical_light_x300", "utlf_tactical_light_foxtrot1", "utlf_tactical_light_olight", "utlf_tactical_light_streamlight" },
+    base = { "utlf_tactical_light", "utlf_tactical_light_m300c" },
+}
+
+function register_light(section, profile)
+    if not section or type(profile) ~= "table" then
+        return
+    end
+
+    registered[section] = utlf_profile.normalize_profile(profile, section, attachment_groups)
+end
+
+function register_pack(pack_name, profiles)
+    for _, profile in ipairs(profiles or {}) do
+        for _, section in ipairs(utlf_profile.normalize_sections(profile.sections)) do
+            register_light(section, profile)
+            printf("[utlf] registered %s from %s", section, tostring(pack_name or "unknown pack"))
+        end
+    end
+end
+
+function register_attachment_group(group_name, sections)
+    if not group_name then
+        return
+    end
+
+    attachment_groups[group_name] = utlf_profile.normalize_sections(sections)
+
+    for _, profile in pairs(registered) do
+        profile.allowed_attachments = utlf_profile.resolve_allowed_attachments(profile, profile.is_modular, attachment_groups)
+    end
+end
+
+function profile_for_section(section)
+    if not section then
+        return nil
+    end
+
+    local profile = registered[section]
+    if profile then
+        return profile
+    end
+
+    local parent = ini_sys:r_string_ex(section, "parent_section")
+    if parent then
+        return registered[parent]
+    end
+end
+
+function active_supported_weapon()
+    local item = db.actor and db.actor:active_item()
+    if item and utlf_core.safe_is_weapon(item) then
+        local profile = profile_for_section(item:section())
+        if profile then
+            return item, profile
+        end
+    end
+end
+
+function loaded_sections_count()
+    return tostring(table.size and table.size(registered) or "unknown")
+end

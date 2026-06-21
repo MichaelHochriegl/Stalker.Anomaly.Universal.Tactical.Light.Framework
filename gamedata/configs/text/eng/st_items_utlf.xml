@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="windows-1251"?>
+
+<string_table>
+    <string id="st_utlf_tactical_light">
+        <text>M600DF Rifle Light</text>
+    </string>
+    <string id="st_utlf_tactical_light_descr">
+        <text>M600DF rifle-pattern weapon light module with a warm flood beam for Universal Tactical Light Framework modular long-gun profiles.</text>
+    </string>
+    <string id="st_utlf_tactical_light_m300c">
+        <text>M300C Rifle Light</text>
+    </string>
+    <string id="st_utlf_tactical_light_m300c_descr">
+        <text>M300C compact rifle-pattern weapon light module with a warm balanced beam for Universal Tactical Light Framework modular long-gun profiles.</text>
+    </string>
+    <string id="st_utlf_tactical_light_x300">
+        <text>X300U-B Pistol Light</text>
+    </string>
+    <string id="st_utlf_tactical_light_x300_descr">
+        <text>X300U-B pistol-pattern weapon light module with a warm flood beam for Universal Tactical Light Framework modular handgun profiles.</text>
+    </string>
+    <string id="st_utlf_tactical_light_foxtrot1">
+        <text>FOXTROT1X Pistol Light</text>
+    </string>
+    <string id="st_utlf_tactical_light_foxtrot1_descr">
+        <text>FOXTROT1X compact pistol-pattern weapon light module with a warm throw beam for Universal Tactical Light Framework modular handgun profiles.</text>
+    </string>
+    <string id="st_utlf_tactical_light_olight">
+        <text>BALDR Pro Pistol Light</text>
+    </string>
+    <string id="st_utlf_tactical_light_olight_descr">
+        <text>BALDR Pro pistol-pattern weapon light module with a warm flood beam for Universal Tactical Light Framework modular handgun profiles.</text>
+    </string>
+    <string id="st_utlf_tactical_light_streamlight">
+        <text>TLR-1 HL Pistol Light</text>
+    </string>
+    <string id="st_utlf_tactical_light_streamlight_descr">
+        <text>TLR-1 HL pistol-pattern weapon light module with a warm throw beam for Universal Tactical Light Framework modular handgun profiles.</text>
+    </string>
+    <string id="st_utlf_detach_tactical_light">
+        <text>Detach tactical light</text>
+    </string>
+</string_table>

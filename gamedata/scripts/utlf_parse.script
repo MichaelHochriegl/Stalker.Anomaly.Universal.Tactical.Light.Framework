@@ -1,0 +1,89 @@
+function trim(value)
+    if not value then
+        return nil
+    end
+    value = tostring(value)
+    return (value:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+function number_at(list, index, fallback)
+    if type(list) ~= "table" then
+        return fallback
+    end
+    return tonumber(list[index]) or fallback
+end
+
+local function components_from_string(value)
+    local values = {}
+    for entry in tostring(value):gmatch("[^,]+") do
+        values[#values + 1] = tonumber(trim(entry))
+    end
+    return values
+end
+
+local function normalized_source(value)
+    if type(value) == "string" then
+        return components_from_string(value)
+    elseif type(value) == "table" then
+        return value
+    end
+    return {}
+end
+
+function vector3(value, fallback)
+    local source = normalized_source(value)
+    local defaults = normalized_source(fallback)
+
+    return {
+        x = tonumber(source.x) or number_at(source, 1, tonumber(defaults.x) or number_at(defaults, 1, 0)),
+        y = tonumber(source.y) or number_at(source, 2, tonumber(defaults.y) or number_at(defaults, 2, 0)),
+        z = tonumber(source.z) or number_at(source, 3, tonumber(defaults.z) or number_at(defaults, 3, 0)),
+    }
+end
+
+function color(value)
+    local result = fcolor()
+    if type(value) == "table" then
+        return result:set(value[1] or 1.0, value[2] or 0.94, value[3] or 0.78, value[4] or 0.55)
+    elseif type(value) == "string" then
+        local values = components_from_string(value)
+        return result:set(values[1] or 1.0, values[2] or 0.94, values[3] or 0.78, values[4] or 0.55)
+    end
+    return result:set(1.0, 0.94, 0.78, 0.55)
+end
+
+function section_number(section, field, fallback)
+    local value = ini_sys:r_string_ex(section, field)
+    if value == nil then
+        return fallback
+    end
+    return tonumber(value) or fallback
+end
+
+function section_bool(section, field, fallback)
+    local value = ini_sys:r_string_ex(section, field)
+    if value == nil then
+        return fallback
+    end
+    value = tostring(value)
+    return value == "true" or value == "1"
+end
+
+function section_string(section, field, fallback)
+    local value = ini_sys:r_string_ex(section, field)
+    if value == nil or value == "" then
+        return fallback
+    end
+    return value
+end
+
+function normalize_bone(value)
+    local number_value = tonumber(value)
+    if number_value then
+        return number_value
+    end
+    if value == nil or value == "" then
+        return 0
+    end
+    return tostring(value)
+end

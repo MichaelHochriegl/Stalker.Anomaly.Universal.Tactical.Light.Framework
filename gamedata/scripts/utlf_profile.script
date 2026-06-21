@@ -1,0 +1,365 @@
+local function defaults()
+    return utlf_core.DEFAULTS
+end
+
+local function append_unique(list, seen, value)
+    value = utlf_parse.trim(value)
+    if value and value ~= "" and not seen[value] then
+        seen[value] = true
+        list[#list + 1] = value
+    end
+end
+
+local function normalize_transform_fields(source, default_scale)
+    source = source or {}
+    local position = utlf_parse.vector3(source.position, { 0, 0, 0 })
+    local rotation = utlf_parse.vector3(source.rotation, { 0, 0, 0 })
+
+    return {
+        x = tonumber(source.x) or position.x,
+        y = tonumber(source.y) or position.y,
+        z = tonumber(source.z) or position.z,
+        rx = tonumber(source.rx) or rotation.x,
+        ry = tonumber(source.ry) or rotation.y,
+        rz = tonumber(source.rz) or rotation.z,
+        scale = tonumber(source.scale) or default_scale or 1,
+        bone = source.bone or 0,
+    }
+end
+
+local function normalize_direction_fields(source)
+    if type(source) ~= "table" then
+        return nil
+    end
+
+    local direction = source.light_direction or source.direction
+    if direction == nil then
+        return nil
+    end
+
+    return utlf_parse.vector3(direction, { 0, 0, 0 })
+end
+
+local function normalize_adapter_override(adapter)
+    if type(adapter) ~= "table" then
+        return nil
+    end
+
+    local result = {}
+    local has_value = false
+
+    if adapter.position or adapter.adapter_position or adapter.x or adapter.y or adapter.z then
+        local position = utlf_parse.vector3(adapter.position or adapter.adapter_position, { adapter.x, adapter.y, adapter.z })
+        result.x = tonumber(adapter.x) or position.x
+        result.y = tonumber(adapter.y) or position.y
+        result.z = tonumber(adapter.z) or position.z
+        has_value = true
+    end
+
+    if adapter.rotation or adapter.adapter_rotation or adapter.rx or adapter.ry or adapter.rz then
+        local rotation = utlf_parse.vector3(adapter.rotation or adapter.adapter_rotation, { adapter.rx, adapter.ry, adapter.rz })
+        result.rx = tonumber(adapter.rx) or rotation.x
+        result.ry = tonumber(adapter.ry) or rotation.y
+        result.rz = tonumber(adapter.rz) or rotation.z
+        has_value = true
+    end
+
+    if adapter.scale ~= nil or adapter.adapter_scale ~= nil then
+        result.scale = tonumber(adapter.scale or adapter.adapter_scale) or 1
+        has_value = true
+    end
+
+    if adapter.bone ~= nil or adapter.adapter_bone ~= nil then
+        result.bone = adapter.bone or adapter.adapter_bone
+        has_value = true
+    end
+
+    local direction = normalize_direction_fields(adapter)
+    if direction then
+        result.light_direction = direction
+        has_value = true
+    end
+
+    if has_value then
+        return result
+    end
+    return nil
+end
+
+local function normalize_mount(mount, id)
+    local d = defaults()
+    if type(mount) ~= "table" then
+        return nil
+    end
+
+    local copy = normalize_transform_fields(mount, d.MODULAR_SCALE)
+    copy.id = utlf_parse.trim(mount.id) or utlf_parse.trim(id)
+    if not copy.id or copy.id == "" then
+        copy.id = "default"
+    end
+
+    copy.class = utlf_parse.trim(mount.class)
+    if not copy.class or copy.class == "" then
+        copy.class = d.DEFAULT_MOUNT_CLASS
+    end
+
+    local direction = normalize_direction_fields(mount)
+    if direction then
+        copy.light_direction = direction
+    end
+
+    if type(mount.adapters) == "table" then
+        copy.adapters = {}
+        for item_section, adapter in pairs(mount.adapters) do
+            copy.adapters[item_section] = normalize_adapter_override(adapter)
+        end
+    end
+
+    return copy
+end
+
+local function normalize_mounts(profile)
+    local mounts = {}
+    local seen = {}
+
+    local function append_mount(mount, id)
+        local normalized = normalize_mount(mount, id)
+        if not normalized then
+            return
+        end
+
+        if seen[normalized.id] then
+            return
+        end
+
+        seen[normalized.id] = true
+        mounts[#mounts + 1] = normalized
+    end
+
+    if type(profile and profile.mount) == "table" then
+        append_mount(profile.mount, profile.mount.id or "default")
+    end
+
+    if type(profile and profile.mounts) == "table" then
+        for index, mount in ipairs(profile.mounts) do
+            append_mount(mount, mount and mount.id or tostring(index))
+        end
+
+        for id, mount in pairs(profile.mounts) do
+            if type(id) ~= "number" then
+                append_mount(mount, id)
+            end
+        end
+    end
+
+    return mounts
+end
+
+function copy_profile(profile)
+    local copy = {}
+    for key, value in pairs(profile or {}) do
+        copy[key] = value
+    end
+    return copy
+end
+
+function normalize_sections(sections)
+    if type(sections) == "string" then
+        return { sections }
+    end
+    return sections or {}
+end
+
+function resolve_allowed_attachments(profile, is_modular, attachment_groups)
+    local result = {}
+    local seen = {}
+
+    local explicit_sections = profile and (profile._utlf_allowed_attachments_source or profile.allowed_attachments)
+    for _, section in ipairs(normalize_sections(explicit_sections)) do
+        append_unique(result, seen, section)
+    end
+
+    local groups = profile and (profile._utlf_attachment_groups_source or profile.attachment_groups)
+    if not groups and is_modular then
+        groups = { "base" }
+    end
+
+    for _, group_name in ipairs(normalize_sections(groups)) do
+        local group = attachment_groups and attachment_groups[utlf_parse.trim(group_name)]
+        for _, section in ipairs(normalize_sections(group)) do
+            append_unique(result, seen, section)
+        end
+    end
+
+    return result
+end
+
+function normalize_profile(profile, section, attachment_groups)
+    local d = defaults()
+    local copy = copy_profile(profile)
+    copy.sections = normalize_sections(profile and profile.sections)
+    copy.section = section
+    copy._utlf_allowed_attachments_source = profile and (profile._utlf_allowed_attachments_source or profile.allowed_attachments)
+    copy._utlf_attachment_groups_source = profile and (profile._utlf_attachment_groups_source or profile.attachment_groups)
+
+    copy.mode = (profile and profile.mode) or "built_in"
+    copy.is_modular = copy.mode == "modular"
+    copy.allowed_attachments = resolve_allowed_attachments(copy, copy.is_modular, attachment_groups)
+    copy.transform = nil
+
+    if copy.is_modular then
+        copy.mounts = normalize_mounts(profile)
+        copy.mount = copy.mounts[1]
+        if not copy.mount then
+            copy.mount_error = string.format("modular profile for %s is missing required mount or mounts", tostring(section))
+            printf("[utlf] %s", copy.mount_error)
+        end
+    else
+        copy.mount = nil
+        copy.mounts = nil
+    end
+
+    copy.range = tonumber(copy.range) or d.RANGE
+    copy.cone_deg = tonumber(copy.cone_deg) or d.CONE_DEG
+    copy.light_type = tonumber(copy.light_type) or 2
+    copy.hud_mode = copy.hud_mode == true
+    copy.shadow = copy.shadow ~= false
+    copy.volumetric = copy.volumetric == true
+    copy.volumetric_distance = tonumber(copy.volumetric_distance) or 0.25
+    copy.volumetric_intensity = tonumber(copy.volumetric_intensity) or 0.02
+    copy.volumetric_quality = tonumber(copy.volumetric_quality) or 0.25
+    copy.texture = copy.texture or d.TEXTURE
+    copy.light_bone = copy.light_bone or d.LIGHT_BONE
+    copy.light_direction = utlf_parse.vector3(copy.light_direction or d.LIGHT_DIRECTION, { 0, 0, 0 })
+    copy.fire_point = copy.fire_point or d.FIRE_POINT
+    copy.reattach_delay_ms = tonumber(copy.reattach_delay_ms) or d.REATTACH_DELAY_MS
+    copy.replacement_window_ms = tonumber(copy.replacement_window_ms) or d.REPLACEMENT_WINDOW_MS
+
+    return copy
+end
+
+function profile_supports_section(profile, section)
+    if not profile or not section then
+        return false
+    end
+
+    for _, supported_section in ipairs(normalize_sections(profile.sections)) do
+        if supported_section == section then
+            return true
+        end
+    end
+
+    local parent = ini_sys:r_string_ex(section, "parent_section")
+    if parent then
+        for _, supported_section in ipairs(normalize_sections(profile.sections)) do
+            if supported_section == parent then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+function is_modular_profile(profile)
+    return profile and profile.is_modular == true
+end
+
+function profile_allowed_attachments(profile)
+    return (profile and profile.allowed_attachments) or {}
+end
+
+function attachment_allowed(profile, item_section)
+    for _, section in ipairs(profile_allowed_attachments(profile)) do
+        if section == item_section then
+            return true
+        end
+    end
+    return false
+end
+
+local function mount_adapter_override(mount, item_section)
+    if not mount or type(mount.adapters) ~= "table" then
+        return nil
+    end
+
+    return mount.adapters[item_section] or mount.adapters.default
+end
+
+local function modular_mount_for_item_internal(profile, item_section, silent)
+    if not is_modular_profile(profile) then
+        return nil
+    end
+
+    if not profile.mounts or #profile.mounts == 0 then
+        if not silent then
+            printf("[utlf] modular profile for %s has no mount for %s", tostring(profile.section), tostring(item_section))
+        end
+        return nil
+    end
+
+    local adapter = utlf_items and utlf_items.modular_item_adapter and utlf_items.modular_item_adapter(item_section)
+    local mount_class = adapter and adapter.mount_class
+    if not mount_class then
+        if not silent then
+            printf("[utlf] modular item %s has no mount_class", tostring(item_section))
+        end
+        return nil
+    end
+
+    for _, mount in ipairs(profile.mounts) do
+        if mount.class == mount_class then
+            return mount, mount_adapter_override(mount, item_section)
+        end
+    end
+
+    if not silent then
+        printf(
+            "[utlf] no compatible modular mount for %s on %s; item requires %s",
+            tostring(item_section),
+            tostring(profile.section),
+            tostring(mount_class)
+        )
+    end
+    return nil
+end
+
+function modular_mount_for_item(profile, item_section)
+    return modular_mount_for_item_internal(profile, item_section, false)
+end
+
+function modular_light_direction_for_item(profile, item_section, fallback)
+    local fallback_direction = utlf_parse.vector3(fallback, { 0, 0, 0 })
+    local mount = modular_mount_for_item_internal(profile, item_section, true)
+    if not mount then
+        return fallback_direction
+    end
+
+    local adapters = type(mount.adapters) == "table" and mount.adapters or nil
+    local item_override = adapters and adapters[item_section] or nil
+    if item_override and item_override.light_direction then
+        return utlf_parse.vector3(item_override.light_direction, fallback_direction)
+    end
+
+    local default_override = adapters and adapters.default or nil
+    if default_override and default_override.light_direction then
+        return utlf_parse.vector3(default_override.light_direction, fallback_direction)
+    end
+
+    if mount.light_direction then
+        return utlf_parse.vector3(mount.light_direction, fallback_direction)
+    end
+
+    return fallback_direction
+end
+
+function vector_from(value, fallback)
+    if type(value) == "userdata" then
+        return value
+    end
+    return utils_data.string_to_vector(value or fallback)
+end
+
+function color_from(value)
+    return utlf_parse.color(value)
+end

@@ -1,0 +1,129 @@
+local strfind = string.find
+local magnifier_switch_wrapped = false
+
+local function state()
+    return utlf_core.get_state()
+end
+
+local function reattach_after_replacement(reason)
+    local s = state()
+    if not s.desired_on then
+        utlf_core.clear_replacement()
+        return
+    end
+
+    local weapon, profile = utlf_core.active_supported_weapon()
+    if not weapon or not profile then
+        if utlf_core.replacement_pending() then
+            CreateTimeEvent("utlf", "reattach_after_replacement", 0.1, function()
+                reattach_after_replacement(reason)
+                return true
+            end)
+        else
+            s.desired_on = false
+            utlf_core.clear_replacement()
+        end
+        return
+    end
+
+    if s.replacement_target_section and weapon:section() ~= s.replacement_target_section then
+        s.desired_on = false
+        utlf_core.clear_replacement()
+        return
+    end
+
+    utlf_lights.attach_light(weapon, profile, reason or "weapon replacement")
+end
+
+local function schedule_reattach_after_replacement(profile, target_section)
+    local s = state()
+    local delay = profile.reattach_delay_ms
+    s.replacement_until = time_global() + delay + profile.replacement_window_ms
+    s.replacement_target_section = target_section
+
+    CreateTimeEvent("utlf", "reattach_after_replacement", delay / 1000, function()
+        reattach_after_replacement("transferring to replacement weapon")
+        return true
+    end)
+end
+
+local function wrap_magnifier_switch()
+    if magnifier_switch_wrapped then
+        return
+    end
+
+    if not (magnifier_switch and magnifier_switch.switch_magnifier) then
+        return
+    end
+
+    local original_switch_magnifier = magnifier_switch.switch_magnifier
+    magnifier_switch.switch_magnifier = function(wpn, sec, new_sec)
+        local weapon = wpn or db.actor:active_item()
+        local section = sec or (weapon and weapon:section())
+        local profile = utlf_core.profile_for_section(section)
+        local target_section = new_sec
+        if not target_section and section and magnifier_switch.get_new_section then
+            target_section = magnifier_switch.get_new_section(section)
+        end
+
+        local s = state()
+        if s.desired_on and s.light and weapon and profile and target_section and target_section ~= section then
+            printf("[utlf] disabling light before 3DSS magnifier replacement")
+            utlf_lights.detach_current_light("before magnifier replacement", true)
+            schedule_reattach_after_replacement(profile, target_section)
+        end
+
+        return original_switch_magnifier(wpn, sec, new_sec)
+    end
+
+    magnifier_switch_wrapped = true
+    printf("[utlf] wrapped 3DSS magnifier switch")
+end
+
+local function actor_on_hud_animation_play(anim_table, weapon)
+    if not anim_table or not anim_table.anm_name or not strfind(anim_table.anm_name, "^anm_show") then
+        return
+    end
+
+    local active = db.actor and db.actor:active_item()
+    if not active or not utlf_core.safe_is_weapon(active) then
+        return
+    end
+
+    local s = state()
+    local profile = utlf_core.profile_for_section(active:section())
+    if s.light and s.weapon_id and active:id() ~= s.weapon_id and not profile then
+        s.desired_on = false
+        utlf_core.clear_replacement()
+        utlf_lights.detach_current_light("active weapon changed")
+        return
+    end
+
+    if not profile then
+        return
+    end
+
+    if s.light and s.weapon_id and active:id() ~= s.weapon_id then
+        if utlf_core.replacement_pending() and (not s.replacement_target_section or active:section() == s.replacement_target_section) then
+            utlf_lights.detach_current_light("weapon object replaced", true)
+            schedule_reattach_after_replacement(profile, active:section())
+        else
+            s.desired_on = false
+            utlf_core.clear_replacement()
+            utlf_lights.detach_current_light("active weapon changed")
+        end
+    end
+
+    if utlf_core.is_modular_profile(profile) then
+        utlf_modular.ensure_attachment(active, profile)
+    end
+
+    if s.desired_on and not s.light and utlf_core.replacement_pending() then
+        utlf_lights.attach_light(active, profile, "HUD animation replacement attach")
+    end
+end
+
+function on_game_start()
+    wrap_magnifier_switch()
+    RegisterScriptCallback("actor_on_hud_animation_play", actor_on_hud_animation_play)
+end

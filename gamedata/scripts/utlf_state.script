@@ -1,0 +1,57 @@
+local state = {
+    desired_on = false,
+    weapon = nil,
+    weapon_id = nil,
+    section = nil,
+    hud = nil,
+    profile = nil,
+    attachment = nil,
+    attachment_name = nil,
+    attachment_is_modular = false,
+    light = nil,
+    replacement_until = nil,
+    replacement_target_section = nil,
+}
+
+local settings = {
+    toggle_key = DIK_keys.DIK_L,
+    toggle_modifier = 3,
+}
+
+function get_state()
+    return state
+end
+
+function get_settings()
+    return settings
+end
+
+function refresh_settings()
+    if not ui_mcm then
+        return
+    end
+
+    local defaults = utlf_core.DEFAULTS
+    settings.toggle_key = tonumber(ui_mcm.get("utlf/framework/toggle_key")) or tonumber(ui_mcm.get("utlf/toggle_key")) or defaults.TOGGLE_KEY
+    settings.toggle_modifier = tonumber(ui_mcm.get("utlf/framework/toggle_modifier")) or tonumber(ui_mcm.get("utlf/toggle_modifier")) or defaults.TOGGLE_MODIFIER
+end
+
+function state_weapon()
+    if not state.weapon_id then
+        return nil
+    end
+
+    local obj = get_object_by_id(state.weapon_id)
+    if obj and utlf_core.safe_is_weapon(obj) then
+        return obj
+    end
+end
+
+function clear_replacement()
+    state.replacement_until = nil
+    state.replacement_target_section = nil
+end
+
+function replacement_pending()
+    return state.replacement_until and time_global() <= state.replacement_until
+end

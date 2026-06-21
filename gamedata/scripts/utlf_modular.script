@@ -1,0 +1,195 @@
+local modular_attachments = {}
+
+local function defaults()
+    return utlf_core.DEFAULTS
+end
+
+local function state()
+    return utlf_core.get_state()
+end
+
+local function apply_transform(attachment, transform)
+    if not attachment or not transform then
+        return
+    end
+
+    attachment:set_parent_bone(transform.bone)
+    attachment:set_position(transform.x, transform.y, transform.z)
+    attachment:set_rotation(transform.rx, transform.ry, transform.rz)
+    attachment:set_scale(transform.scale, transform.scale, transform.scale)
+end
+
+local function apply_adapter_override(adapter, override)
+    if not adapter then
+        return nil
+    end
+
+    local copy = {}
+    for key, value in pairs(adapter) do
+        copy[key] = value
+    end
+
+    for key, value in pairs(override or {}) do
+        if value ~= nil then
+            copy[key] = value
+        end
+    end
+
+    return copy
+end
+
+local function root_attachment(weapon)
+    if not weapon then
+        return nil
+    end
+
+    local ok, result = pcall(function()
+        return weapon:get_attachment(defaults().MODULAR_MOUNT_ATTACHMENT_NAME)
+    end)
+    if ok then
+        return result
+    end
+    return nil
+end
+
+local function visible_attachment(root)
+    if not root then
+        return nil
+    end
+
+    local ok, result = pcall(function()
+        return root:get_attachment(defaults().MODULAR_VISIBLE_ATTACHMENT_NAME)
+    end)
+    if ok then
+        return result
+    end
+    return nil
+end
+
+local function remove_modular_root(weapon)
+    if not weapon then
+        return
+    end
+
+    local d = defaults()
+    pcall(function()
+        weapon:remove_attachment(d.MODULAR_MOUNT_ATTACHMENT_NAME)
+    end)
+    pcall(function()
+        weapon:remove_attachment(d.MODULAR_VISIBLE_ATTACHMENT_NAME)
+    end)
+    pcall(function()
+        weapon:remove_attachment(d.MODULAR_ATTACHMENT_NAME)
+    end)
+end
+
+local function hide_mount_carrier(root)
+    pcall(function()
+        root:set_bone_visible(0, false, true)
+    end)
+end
+
+function ensure_attachment(weapon, profile)
+    if not weapon or not profile or not utlf_core.is_modular_profile(profile) then
+        return nil
+    end
+
+    local d = defaults()
+    local saved = utlf_core.saved_modular_light(weapon)
+    if not saved or not saved.section then
+        remove_modular_root(weapon)
+        modular_attachments[weapon:id()] = nil
+        return nil
+    end
+
+    local mount, adapter_override = utlf_core.modular_mount_for_item(profile, saved.section)
+    if not mount then
+        return nil
+    end
+
+    local adapter = apply_adapter_override(utlf_core.modular_item_adapter(saved.section, mount.class), adapter_override)
+    if not adapter then
+        printf("[utlf] modular item %s is not compatible with mount class %s", tostring(saved.section), tostring(mount.class))
+        return nil
+    end
+
+    local weapon_id = weapon:id()
+    local existing_state = modular_attachments[weapon_id]
+    local root = root_attachment(weapon)
+    local visible = visible_attachment(root)
+    if existing_state and existing_state.section ~= saved.section then
+        remove_modular_root(weapon)
+        root = nil
+        visible = nil
+    end
+
+    if root and visible then
+        apply_transform(root, mount)
+        apply_transform(visible, adapter)
+        modular_attachments[weapon_id] = {
+            section = saved.section,
+            root = root,
+            visible = visible,
+            mount_id = mount.id,
+        }
+        return visible
+    end
+
+    local model = utlf_core.modular_attachment_model(saved.section, profile)
+    remove_modular_root(weapon)
+
+    local root_model = d.MODULAR_MOUNT_MODEL or model
+    local ok, err = pcall(function()
+        root = weapon:add_attachment(d.MODULAR_MOUNT_ATTACHMENT_NAME, root_model)
+        root:set_type(profile.attachment_type or d.ATTACHMENT_TYPE_HUD)
+        apply_transform(root, mount)
+        hide_mount_carrier(root)
+
+        visible = root:add_attachment(d.MODULAR_VISIBLE_ATTACHMENT_NAME, model)
+        visible:set_type(profile.attachment_type or d.ATTACHMENT_TYPE_HUD)
+        apply_transform(visible, adapter)
+    end)
+
+    if not ok or not root or not visible then
+        printf("[utlf] failed to create modular mount for %s: %s", weapon:section(), tostring(err))
+        remove_modular_root(weapon)
+        return nil
+    end
+
+    modular_attachments[weapon_id] = {
+        section = saved.section,
+        root = root,
+        visible = visible,
+        mount_id = mount.id,
+    }
+    printf("[utlf] created modular mount for %s using root '%s' and visible '%s'", weapon:section(), root_model, model)
+    return visible
+end
+
+function detach_item(weapon, return_item)
+    if not weapon then
+        return false
+    end
+
+    local saved = utlf_core.saved_modular_light(weapon)
+    if not saved or not saved.section then
+        return false
+    end
+
+    if return_item then
+        alife_create_item(saved.section, db.actor)
+    end
+
+    local s = state()
+    if s.weapon_id == weapon:id() then
+        s.desired_on = false
+        utlf_core.clear_replacement()
+        utlf_lights.detach_light("modular light detached", false, false)
+    else
+        remove_modular_root(weapon)
+    end
+
+    modular_attachments[weapon:id()] = nil
+    utlf_core.clear_modular_light(weapon)
+    return true
+end

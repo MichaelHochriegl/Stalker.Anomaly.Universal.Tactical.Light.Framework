@@ -1,0 +1,145 @@
+local snd_tactical_light = sound_object("interface\\inv_torch")
+local original_torch_toggle = nil
+local wrapped_torch_toggle = nil
+local suppress_torch_until = nil
+local suppress_torch_release_key = nil
+
+local function state()
+    return utlf_core.get_state()
+end
+
+local function dik_pressed(left, right)
+    return (key_state(left) or 0) ~= 0 or (key_state(right) or 0) ~= 0
+end
+
+local function configured_modifier_pressed(modifier)
+    modifier = tonumber(modifier) or 0
+
+    local shift = dik_pressed(DIK_keys.DIK_LSHIFT, DIK_keys.DIK_RSHIFT)
+    local ctrl = dik_pressed(DIK_keys.DIK_LCONTROL, DIK_keys.DIK_RCONTROL)
+    local alt = dik_pressed(DIK_keys.DIK_LMENU, DIK_keys.DIK_RMENU)
+
+    if modifier == 1 then
+        return shift
+    elseif modifier == 2 then
+        return ctrl
+    elseif modifier == 3 then
+        return alt
+    end
+
+    return not (shift or ctrl or alt)
+end
+
+local function suppress_engine_torch(key)
+    suppress_torch_release_key = key
+    suppress_torch_until = time_global() + 3000
+end
+
+local function engine_torch_suppressed()
+    return suppress_torch_until and time_global() <= suppress_torch_until
+end
+
+local function wrap_engine_torch_toggle()
+    if not actor_effects or not actor_effects.Hit_TorchToggle then
+        return
+    end
+
+    if wrapped_torch_toggle and actor_effects.Hit_TorchToggle == wrapped_torch_toggle then
+        return
+    end
+
+    original_torch_toggle = actor_effects.Hit_TorchToggle
+    wrapped_torch_toggle = function(...)
+        if engine_torch_suppressed() then
+            return
+        end
+
+        return original_torch_toggle(...)
+    end
+    actor_effects.Hit_TorchToggle = wrapped_torch_toggle
+
+    printf("[utlf] wrapped engine torch toggle")
+end
+
+local function play_toggle_sound(enabled)
+    snd_tactical_light.frequency = enabled and 1.15 or 0.85
+    snd_tactical_light:play(db.actor, 0, sound_object.s2d)
+end
+
+local function toggle_light()
+    local weapon, profile = utlf_core.active_supported_weapon()
+    if not weapon then
+        return true
+    end
+
+    if utlf_core.is_modular_profile(profile) and not utlf_core.saved_modular_light(weapon) then
+        printf("[utlf] %s has no modular tactical light attached", weapon:section())
+        return true
+    end
+
+    local s = state()
+    if s.desired_on then
+        s.desired_on = false
+        utlf_core.clear_replacement()
+        utlf_lights.detach_current_light("manual toggle")
+        play_toggle_sound(false)
+    else
+        s.desired_on = true
+        utlf_core.clear_replacement()
+        utlf_lights.attach_light(weapon, profile)
+        if s.light then
+            play_toggle_sound(true)
+        end
+    end
+
+    return true
+end
+
+local function on_before_key_press(key, bind, dis, flags)
+    wrap_engine_torch_toggle()
+
+    local settings = utlf_core.get_settings()
+    if key ~= settings.toggle_key or not configured_modifier_pressed(settings.toggle_modifier) then
+        return
+    end
+
+    suppress_engine_torch(key)
+
+    if flags then
+        flags.ret_value = false
+    end
+
+    local weapon = utlf_core.active_supported_weapon()
+    if not weapon then
+        return
+    end
+
+    if device():is_paused() or not actor_menu.is_hud_free() then
+        return
+    end
+
+    if weapon:get_state() ~= 0 then
+        return
+    end
+
+    toggle_light()
+end
+
+local function on_before_key_release(key, bind, dis, flags)
+    if key ~= suppress_torch_release_key then
+        return
+    end
+
+    if flags then
+        flags.ret_value = false
+    end
+
+    suppress_torch_release_key = nil
+    suppress_torch_until = time_global() + 250
+end
+
+function on_game_start()
+    wrap_engine_torch_toggle()
+    RegisterScriptCallback("on_before_key_press", on_before_key_press)
+    RegisterScriptCallback("on_before_key_release", on_before_key_release)
+end

@@ -1,0 +1,213 @@
+local strgsub = string.gsub
+
+DEFAULTS = {
+    BUILT_IN_ATTACHMENT_NAME = "utlf_tactical_light_attachment",
+    MODULAR_MOUNT_ATTACHMENT_NAME = "utlf_modular_mount",
+    MODULAR_VISIBLE_ATTACHMENT_NAME = "utlf_modular_tactical_light",
+    MODULAR_ATTACHMENT_NAME = "utlf_modular_tactical_light",
+    MODULAR_VAR = "utlf_tactical_light",
+    ATTACHMENT_TYPE_HUD = 0,
+    TOGGLE_KEY = DIK_keys.DIK_L,
+    TOGGLE_MODIFIER = 3,
+    FIRE_BONE = "wpn_body",
+    LIGHT_BONE = "wpn_body",
+    FIRE_POINT = "0,0,0.035",
+    ATTACHMENT_SCALE = 0.001,
+    MODULAR_MOUNT_MODEL = "dynamics\\weapons\\wpn_lights_rifle\\wpn_m600df",
+    MODULAR_MODEL = "dynamics\\weapons\\wpn_lights_rifle\\wpn_m600df",
+    MODULAR_SCALE = 1,
+    LIGHT_DIRECTION = "0,0,0",
+    RIFLE_MOUNT_CLASS = "rifle_side",
+    PISTOL_MOUNT_CLASS = "pistol_underbarrel",
+    DEFAULT_MOUNT_CLASS = "rifle_side",
+    RANGE = 26,
+    CONE_DEG = 24,
+    TEXTURE = "internal\\internal_tactical_torch",
+    REATTACH_DELAY_MS = 250,
+    REPLACEMENT_WINDOW_MS = 1000,
+}
+
+function safe_is_weapon(obj)
+    if not obj then
+        return false
+    end
+
+    local ok, is_weapon = pcall(_G.IsWeapon, obj)
+    return ok and is_weapon == true
+end
+
+function config_path(page_id, option_id)
+    return "utlf/" .. tostring(page_id) .. "/" .. tostring(option_id)
+end
+
+function clamp_number(value, fallback, min_value, max_value)
+    value = tonumber(value) or tonumber(fallback)
+    if not value then
+        return fallback
+    end
+
+    if min_value and value < min_value then
+        return min_value
+    elseif max_value and value > max_value then
+        return max_value
+    end
+
+    return value
+end
+
+function get_mcm_number(path, fallback, min_value, max_value)
+    local value = fallback
+    if ui_mcm then
+        value = ui_mcm.get(path)
+    end
+
+    return clamp_number(value, fallback, min_value, max_value)
+end
+
+function configured_profile(profile, config)
+    local copy = utlf_profile.copy_profile(profile)
+    local page_id = config and (config.page_id or config.page)
+    local numbers = config and config.numbers
+
+    if page_id and numbers then
+        for field, spec in pairs(numbers) do
+            local option_id = spec.id or field
+            local fallback = spec.def or spec.default or profile[field]
+            copy[field] = get_mcm_number(config_path(page_id, option_id), fallback, spec.min, spec.max)
+        end
+    end
+
+    return copy
+end
+
+function weapon_hud_section(weapon)
+    return SYS_GetParam(0, weapon:section(), "hud", weapon:section())
+end
+
+function attachment_model(weapon, profile)
+    local model = profile.model or SYS_GetParam(0, weapon:section(), "visual", nil)
+    if not model or model == "" then
+        model = SYS_GetParam(0, weapon:section(), "visual", weapon:section())
+    end
+    return strgsub(model, "%.ogf$", "")
+end
+
+function get_state()
+    return utlf_state.get_state()
+end
+
+function get_settings()
+    return utlf_state.get_settings()
+end
+
+function refresh_settings()
+    return utlf_state.refresh_settings()
+end
+
+function state_weapon()
+    return utlf_state.state_weapon()
+end
+
+function clear_replacement()
+    return utlf_state.clear_replacement()
+end
+
+function replacement_pending()
+    return utlf_state.replacement_pending()
+end
+
+function copy_profile(profile)
+    return utlf_profile.copy_profile(profile)
+end
+
+function normalize_sections(sections)
+    return utlf_profile.normalize_sections(sections)
+end
+
+function normalize_profile(profile, section)
+    return utlf_profile.normalize_profile(profile, section)
+end
+
+function profile_supports_section(profile, section)
+    return utlf_profile.profile_supports_section(profile, section)
+end
+
+function is_modular_profile(profile)
+    return utlf_profile.is_modular_profile(profile)
+end
+
+function profile_allowed_attachments(profile)
+    return utlf_profile.profile_allowed_attachments(profile)
+end
+
+function attachment_allowed(profile, item_section)
+    return utlf_profile.attachment_allowed(profile, item_section)
+end
+
+function vector_from(value, fallback)
+    return utlf_profile.vector_from(value, fallback)
+end
+
+function color_from(value)
+    return utlf_profile.color_from(value)
+end
+
+function register_light(section, profile)
+    return utlf_registry.register_light(section, profile)
+end
+
+function register_pack(pack_name, profiles)
+    return utlf_registry.register_pack(pack_name, profiles)
+end
+
+function register_attachment_group(group_name, sections)
+    return utlf_registry.register_attachment_group(group_name, sections)
+end
+
+function profile_for_section(section)
+    return utlf_registry.profile_for_section(section)
+end
+
+function active_supported_weapon()
+    return utlf_registry.active_supported_weapon()
+end
+
+function loaded_sections_count()
+    return utlf_registry.loaded_sections_count()
+end
+
+function light_profile_for_item(item_section)
+    return utlf_items.light_profile_for_item(item_section)
+end
+
+function is_utlf_attachment_item(section)
+    return utlf_items.is_utlf_attachment_item(section)
+end
+
+function saved_modular_light(weapon)
+    return utlf_items.saved_modular_light(weapon)
+end
+
+function save_modular_light(weapon, section)
+    return utlf_items.save_modular_light(weapon, section)
+end
+
+function clear_modular_light(weapon)
+    return utlf_items.clear_modular_light(weapon)
+end
+
+function modular_mount_for_item(profile, item_section)
+    return utlf_profile.modular_mount_for_item(profile, item_section)
+end
+
+function modular_light_direction_for_item(profile, item_section, fallback)
+    return utlf_profile.modular_light_direction_for_item(profile, item_section, fallback)
+end
+
+function modular_item_adapter(item_section, mount_class)
+    return utlf_items.modular_item_adapter(item_section, mount_class)
+end
+
+function modular_attachment_model(section, profile)
+    return utlf_items.modular_attachment_model(section, profile)
+end
