@@ -24,7 +24,6 @@ DEFAULTS = {
     CONE_DEG = 24,
     TEXTURE = "internal\\internal_tactical_torch",
     REATTACH_DELAY_MS = 250,
-    PRE_REPLACEMENT_DELAY_MS = 400,
     REPLACEMENT_WINDOW_MS = 1000,
 }
 
