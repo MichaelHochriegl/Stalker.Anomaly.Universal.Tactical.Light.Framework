@@ -109,17 +109,8 @@ local function create_light(attachment, profile)
     light.texture = profile.texture
     light.color = utlf_core.color_from(profile.color)
     light:set_position(0, 0, 0)
-    local direction = profile.light_direction or defaults().LIGHT_DIRECTION
-    if type(direction) == "table" then
-        light:set_direction(
-            math.rad(direction.x or direction[1] or 0),
-            math.rad(direction.y or direction[2] or 0),
-            math.rad(direction.z or direction[3] or 0)
-        )
-    else
-        local vector = utlf_core.vector_from(direction, defaults().LIGHT_DIRECTION)
-        light:set_direction(math.rad(vector.x), math.rad(vector.y), math.rad(vector.z))
-    end
+    local direction = utlf_parse.vector3(profile.light_direction or defaults().LIGHT_DIRECTION, { 0, 0, 0 })
+    light:set_direction(math.rad(direction.x), math.rad(direction.y), math.rad(direction.z))
     light:set_cone(math.rad(profile.cone_deg))
     light.enabled = true
 

@@ -2,55 +2,18 @@ local function defaults()
     return utlf_core.DEFAULTS
 end
 
-local function trim(value)
-    if not value then
-        return nil
-    end
-    value = tostring(value)
-    return (value:gsub("^%s+", ""):gsub("%s+$", ""))
-end
-
 local function append_unique(list, seen, value)
-    value = trim(value)
+    value = utlf_parse.trim(value)
     if value and value ~= "" and not seen[value] then
         seen[value] = true
         list[#list + 1] = value
     end
 end
 
-local function number_at(list, index, fallback)
-    if type(list) ~= "table" then
-        return fallback
-    end
-    return tonumber(list[index]) or fallback
-end
-
-local function vector_components(value, fallback)
-    fallback = fallback or {}
-
-    if type(value) == "string" then
-        local values = {}
-        for entry in value:gmatch("[^,]+") do
-            values[#values + 1] = tonumber(trim(entry))
-        end
-        value = values
-    end
-
-    if type(value) ~= "table" then
-        value = {}
-    end
-
-    return {
-        x = tonumber(value.x) or number_at(value, 1, fallback.x or fallback[1] or 0),
-        y = tonumber(value.y) or number_at(value, 2, fallback.y or fallback[2] or 0),
-        z = tonumber(value.z) or number_at(value, 3, fallback.z or fallback[3] or 0),
-    }
-end
-
 local function normalize_transform_fields(source, default_scale)
     source = source or {}
-    local position = vector_components(source.position, { 0, 0, 0 })
-    local rotation = vector_components(source.rotation, { 0, 0, 0 })
+    local position = utlf_parse.vector3(source.position, { 0, 0, 0 })
+    local rotation = utlf_parse.vector3(source.rotation, { 0, 0, 0 })
 
     return {
         x = tonumber(source.x) or position.x,
@@ -74,7 +37,7 @@ local function normalize_direction_fields(source)
         return nil
     end
 
-    return vector_components(direction, { 0, 0, 0 })
+    return utlf_parse.vector3(direction, { 0, 0, 0 })
 end
 
 local function normalize_adapter_override(adapter)
@@ -86,7 +49,7 @@ local function normalize_adapter_override(adapter)
     local has_value = false
 
     if adapter.position or adapter.adapter_position or adapter.x or adapter.y or adapter.z then
-        local position = vector_components(adapter.position or adapter.adapter_position, { adapter.x, adapter.y, adapter.z })
+        local position = utlf_parse.vector3(adapter.position or adapter.adapter_position, { adapter.x, adapter.y, adapter.z })
         result.x = tonumber(adapter.x) or position.x
         result.y = tonumber(adapter.y) or position.y
         result.z = tonumber(adapter.z) or position.z
@@ -94,7 +57,7 @@ local function normalize_adapter_override(adapter)
     end
 
     if adapter.rotation or adapter.adapter_rotation or adapter.rx or adapter.ry or adapter.rz then
-        local rotation = vector_components(adapter.rotation or adapter.adapter_rotation, { adapter.rx, adapter.ry, adapter.rz })
+        local rotation = utlf_parse.vector3(adapter.rotation or adapter.adapter_rotation, { adapter.rx, adapter.ry, adapter.rz })
         result.rx = tonumber(adapter.rx) or rotation.x
         result.ry = tonumber(adapter.ry) or rotation.y
         result.rz = tonumber(adapter.rz) or rotation.z
@@ -130,12 +93,12 @@ local function normalize_mount(mount, id)
     end
 
     local copy = normalize_transform_fields(mount, d.MODULAR_SCALE)
-    copy.id = trim(mount.id) or trim(id)
+    copy.id = utlf_parse.trim(mount.id) or utlf_parse.trim(id)
     if not copy.id or copy.id == "" then
         copy.id = "default"
     end
 
-    copy.class = trim(mount.class)
+    copy.class = utlf_parse.trim(mount.class)
     if not copy.class or copy.class == "" then
         copy.class = d.DEFAULT_MOUNT_CLASS
     end
@@ -222,7 +185,7 @@ function resolve_allowed_attachments(profile, is_modular, attachment_groups)
     end
 
     for _, group_name in ipairs(normalize_sections(groups)) do
-        local group = attachment_groups and attachment_groups[trim(group_name)]
+        local group = attachment_groups and attachment_groups[utlf_parse.trim(group_name)]
         for _, section in ipairs(normalize_sections(group)) do
             append_unique(result, seen, section)
         end
@@ -267,7 +230,7 @@ function normalize_profile(profile, section, attachment_groups)
     copy.volumetric_quality = tonumber(copy.volumetric_quality) or 0.25
     copy.texture = copy.texture or d.TEXTURE
     copy.light_bone = copy.light_bone or d.LIGHT_BONE
-    copy.light_direction = vector_components(copy.light_direction or d.LIGHT_DIRECTION, { 0, 0, 0 })
+    copy.light_direction = utlf_parse.vector3(copy.light_direction or d.LIGHT_DIRECTION, { 0, 0, 0 })
     copy.fire_point = copy.fire_point or d.FIRE_POINT
     copy.reattach_delay_ms = tonumber(copy.reattach_delay_ms) or d.REATTACH_DELAY_MS
     copy.replacement_window_ms = tonumber(copy.replacement_window_ms) or d.REPLACEMENT_WINDOW_MS
@@ -366,7 +329,7 @@ function modular_mount_for_item(profile, item_section)
 end
 
 function modular_light_direction_for_item(profile, item_section, fallback)
-    local fallback_direction = vector_components(fallback, { 0, 0, 0 })
+    local fallback_direction = utlf_parse.vector3(fallback, { 0, 0, 0 })
     local mount = modular_mount_for_item_internal(profile, item_section, true)
     if not mount then
         return fallback_direction
@@ -375,16 +338,16 @@ function modular_light_direction_for_item(profile, item_section, fallback)
     local adapters = type(mount.adapters) == "table" and mount.adapters or nil
     local item_override = adapters and adapters[item_section] or nil
     if item_override and item_override.light_direction then
-        return vector_components(item_override.light_direction, fallback_direction)
+        return utlf_parse.vector3(item_override.light_direction, fallback_direction)
     end
 
     local default_override = adapters and adapters.default or nil
     if default_override and default_override.light_direction then
-        return vector_components(default_override.light_direction, fallback_direction)
+        return utlf_parse.vector3(default_override.light_direction, fallback_direction)
     end
 
     if mount.light_direction then
-        return vector_components(mount.light_direction, fallback_direction)
+        return utlf_parse.vector3(mount.light_direction, fallback_direction)
     end
 
     return fallback_direction
@@ -398,15 +361,5 @@ function vector_from(value, fallback)
 end
 
 function color_from(value)
-    local color = fcolor()
-    if type(value) == "table" then
-        return color:set(value[1] or 1.0, value[2] or 0.94, value[3] or 0.78, value[4] or 0.55)
-    elseif type(value) == "string" then
-        local values = {}
-        for entry in value:gmatch("[^,]+") do
-            values[#values + 1] = tonumber(trim(entry))
-        end
-        return color:set(values[1] or 1.0, values[2] or 0.94, values[3] or 0.78, values[4] or 0.55)
-    end
-    return color:set(1.0, 0.94, 0.78, 0.55)
+    return utlf_parse.color(value)
 end
