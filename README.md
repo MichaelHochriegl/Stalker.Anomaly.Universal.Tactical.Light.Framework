@@ -33,12 +33,12 @@ Current modular flashlight item profiles:
 
 | Section | Light | Cost | Weight | Range | Cone | Texture | Color |
 | --- | --- | ---: | ---: | ---: | ---: | --- | --- |
-| `utlf_tactical_light_foxtrot1` | FOXTROT1X | `14000` | `0.068` | `38` | `38` | `utlf\lights\spot_throw` | `0.98,0.97,0.94,0.55` |
-| `utlf_tactical_light_olight` | BALDR Pro | `23000` | `0.129` | `43` | `58` | `utlf\lights\spot_flood` | `1.00,0.96,0.86,0.55` |
-| `utlf_tactical_light_streamlight` | TLR-1 HL | `24000` | `0.123` | `51` | `42` | `utlf\lights\spot_throw` | `0.97,0.96,0.94,0.55` |
-| `utlf_tactical_light_x300` | X300U-B | `30000` | `0.116` | `38` | `60` | `utlf\lights\spot_flood` | `1.00,0.98,0.95,0.55` |
-| `utlf_tactical_light_m300c` | M300C | `19000` | `0.116` | `32` | `50` | `utlf\lights\spot_balanced` | `1.00,0.95,0.86,0.55` |
-| `utlf_tactical_light` | M600DF | `36000` | `0.156` | `45` | `62` | `utlf\lights\spot_flood` | `1.00,0.99,0.95,0.55` |
+| `utlf_tactical_light_foxtrot1` | FOXTROT1X | `14000` | `0.068` | `52` | `38` | `utlf\lights\spot_throw` | `1.00,0.95,0.86,0.55` |
+| `utlf_tactical_light_olight` | BALDR Pro | `23000` | `0.129` | `39` | `58` | `utlf\lights\spot_flood` | `1.00,0.93,0.78,0.55` |
+| `utlf_tactical_light_streamlight` | TLR-1 HL | `24000` | `0.123` | `56` | `42` | `utlf\lights\spot_throw` | `1.00,0.94,0.84,0.55` |
+| `utlf_tactical_light_x300` | X300U-B | `30000` | `0.116` | `38` | `60` | `utlf\lights\spot_flood` | `1.00,0.95,0.88,0.55` |
+| `utlf_tactical_light_m300c` | M300C | `19000` | `0.116` | `48` | `50` | `utlf\lights\spot_balanced` | `1.00,0.93,0.80,0.55` |
+| `utlf_tactical_light` | M600DF | `36000` | `0.156` | `40` | `62` | `utlf\lights\spot_flood` | `1.00,0.96,0.88,0.55` |
 
 For modular weapon profiles, drag one of these items onto a supported weapon in the inventory. UTLF stores the attached item on that specific weapon, adds an inventory icon layer, creates a visible scripted attachment model when the weapon is drawn, and returns the item when detached through the inventory context menu.
 
