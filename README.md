@@ -23,6 +23,23 @@ UTLF provides real inventory addon items:
 - Pistol lights in `utlf_pistols`: `utlf_tactical_light_x300`, `utlf_tactical_light_foxtrot1`, `utlf_tactical_light_olight`, and `utlf_tactical_light_streamlight`.
 - `base` is retained as a legacy alias for the rifle/long-gun group only.
 
+Current modular flashlight item profiles:
+
+| Section | Light | Cost | Weight | Range | Cone | Texture | Color |
+| --- | --- | ---: | ---: | ---: | ---: | --- | --- |
+| `utlf_tactical_light_foxtrot1` | FOXTROT1X | `14000` | `0.068` | `38` | `38` | `utlf\lights\spot_throw` | `0.98,0.97,0.94,0.55` |
+| `utlf_tactical_light_olight` | BALDR Pro | `23000` | `0.129` | `43` | `58` | `utlf\lights\spot_flood` | `1.00,0.96,0.86,0.55` |
+| `utlf_tactical_light_streamlight` | TLR-1 HL | `24000` | `0.123` | `51` | `42` | `utlf\lights\spot_throw` | `0.97,0.96,0.94,0.55` |
+| `utlf_tactical_light_x300` | X300U-B | `30000` | `0.116` | `38` | `60` | `utlf\lights\spot_flood` | `1.00,0.98,0.95,0.55` |
+| `utlf_tactical_light_m300c` | M300C | `19000` | `0.116` | `32` | `50` | `utlf\lights\spot_balanced` | `1.00,0.95,0.86,0.55` |
+| `utlf_tactical_light` | M600DF | `36000` | `0.156` | `45` | `62` | `utlf\lights\spot_flood` | `1.00,0.99,0.95,0.55` |
+
+The `spot_throw`, `spot_flood`, and `spot_balanced` DDS masks are neutral grayscale beam shapes. They intentionally contain no baked hue, so the engine tint still comes from each item's `light_color` value.
+
+Brightness is not implemented as a separate item profile control. The visible `attachment_script_light` path reliably exposes range, cone, texture, and color; the fourth color component is kept constant at `0.55` for all six modular lights until a separate brightness control is tested.
+
+The generated PNG previews and contact sheet under `tools/light_profile_previews/` are development review artifacts. They are outside `gamedata`, and the release workflow packages only `gamedata`, `README.md`, and `meta.ini`, so the preview images are not included in release archives.
+
 For modular weapon profiles, drag one of these items onto a supported weapon in the inventory. UTLF stores the attached item on that specific weapon, adds an inventory icon layer, creates a visible scripted attachment model when the weapon is drawn, and returns the item when detached through the inventory context menu.
 ## MCM Pages
 

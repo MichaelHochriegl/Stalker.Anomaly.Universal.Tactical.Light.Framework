@@ -5,37 +5,37 @@
         <text>M600DF Rifle Light</text>
     </string>
     <string id="st_utlf_tactical_light_descr">
-        <text>Rifle-pattern weapon light module used by Universal Tactical Light Framework modular long-gun profiles.</text>
+        <text>M600DF rifle-pattern weapon light module with a neutral-warm flood beam for Universal Tactical Light Framework modular long-gun profiles.</text>
     </string>
     <string id="st_utlf_tactical_light_m300c">
         <text>M300C Rifle Light</text>
     </string>
     <string id="st_utlf_tactical_light_m300c_descr">
-        <text>Compact rifle-pattern weapon light module used by Universal Tactical Light Framework modular long-gun profiles.</text>
+        <text>M300C compact rifle-pattern weapon light module with a warm balanced beam for Universal Tactical Light Framework modular long-gun profiles.</text>
     </string>
     <string id="st_utlf_tactical_light_x300">
-        <text>X300 Pistol Light</text>
+        <text>X300U-B Pistol Light</text>
     </string>
     <string id="st_utlf_tactical_light_x300_descr">
-        <text>Pistol-pattern weapon light module used by Universal Tactical Light Framework modular handgun profiles.</text>
+        <text>X300U-B pistol-pattern weapon light module with a neutral-warm flood beam for Universal Tactical Light Framework modular handgun profiles.</text>
     </string>
     <string id="st_utlf_tactical_light_foxtrot1">
-        <text>Foxtrot1 Pistol Light</text>
+        <text>FOXTROT1X Pistol Light</text>
     </string>
     <string id="st_utlf_tactical_light_foxtrot1_descr">
-        <text>Compact pistol-pattern weapon light module used by Universal Tactical Light Framework modular handgun profiles.</text>
+        <text>FOXTROT1X compact pistol-pattern weapon light module with a neutral-warm throw beam for Universal Tactical Light Framework modular handgun profiles.</text>
     </string>
     <string id="st_utlf_tactical_light_olight">
-        <text>Olight Pistol Light</text>
+        <text>BALDR Pro Pistol Light</text>
     </string>
     <string id="st_utlf_tactical_light_olight_descr">
-        <text>Pistol-pattern Olight weapon light module used by Universal Tactical Light Framework modular handgun profiles.</text>
+        <text>BALDR Pro pistol-pattern weapon light module with a warm flood beam for Universal Tactical Light Framework modular handgun profiles.</text>
     </string>
     <string id="st_utlf_tactical_light_streamlight">
-        <text>Streamlight Pistol Light</text>
+        <text>TLR-1 HL Pistol Light</text>
     </string>
     <string id="st_utlf_tactical_light_streamlight_descr">
-        <text>Pistol-pattern Streamlight weapon light module used by Universal Tactical Light Framework modular handgun profiles.</text>
+        <text>TLR-1 HL pistol-pattern weapon light module with a neutral-warm throw beam for Universal Tactical Light Framework modular handgun profiles.</text>
     </string>
     <string id="st_utlf_detach_tactical_light">
         <text>Detach tactical light</text>
