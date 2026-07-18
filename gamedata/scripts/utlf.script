@@ -29,6 +29,16 @@ function setup_builtin_light_pack(pack_name, profile, config)
     end)
 end
 
+-- Deprecated compatibility shims for older built-in weapon patches.
+function register_configured_pack(pack_name, profile, config)
+    return register_builtin_light_pack(pack_name, profile, config)
+end
+
+-- Deprecated compatibility shims for older built-in weapon patches.
+function setup_configured_pack(pack_name, profile, config)
+    return setup_builtin_light_pack(pack_name, profile, config)
+end
+
 function clamp_number(value, fallback, min_value, max_value)
     return utlf_core.clamp_number(value, fallback, min_value, max_value)
 end

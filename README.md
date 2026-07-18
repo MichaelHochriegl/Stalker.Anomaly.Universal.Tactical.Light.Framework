@@ -101,6 +101,8 @@ end
 
 `CONFIG.page` is the MCM namespace for that weapon patch. Use a unique value per compatibility patch so each built-in weapon pack stores its own `range`, `cone_deg`, and future options independently. Modular flashlight emitter values belong on the flashlight item section instead, not on the weapon patch profile.
 
+Deprecated compatibility shims `setup_configured_pack(pack_name, profile, config)` and `register_configured_pack(pack_name, profile, config)` remain available only to avoid breaking older third-party built-in patches. New configurable built-in patches should use `setup_builtin_light_pack(...)`; direct non-MCM registrations should use `register_pack(...)`.
+
 ## Public API
 
 Compatibility patches should call the small facade in `utlf.script` instead of internal modules:
@@ -111,6 +113,8 @@ Compatibility patches should call the small facade in `utlf.script` instead of i
 | `register_light(section, profile)` | Register a single weapon section/profile pair when a pack table is unnecessary. |
 | `register_attachment_group(group_name, sections)` | Add reusable modular flashlight groups for patch-specific item allow-lists. |
 | `setup_builtin_light_pack(pack_name, profile, config)` | Register a configurable built-in light profile and rebuild the active light after MCM changes. |
+| `setup_configured_pack(pack_name, profile, config)` | Deprecated compatibility shim; use `setup_builtin_light_pack(...)` for MCM-backed built-in packs. |
+| `register_configured_pack(pack_name, profile, config)` | Deprecated compatibility shim; use `register_pack(...)` for direct non-MCM registration. |
 | `clamp_number(value, fallback, min, max)` | Clamp numeric configuration values when a patch reads its own non-MCM source. |
 | `get_mcm_number(path, fallback, min, max)` | Read and clamp optional numeric MCM values with a fallback when MCM is unavailable. |
 | `get_default_toggle_key()` | Read the framework default toggle key for UI/config integration. |
