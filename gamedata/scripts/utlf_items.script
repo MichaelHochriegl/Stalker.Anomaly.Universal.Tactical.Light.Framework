@@ -1,10 +1,53 @@
 local strgsub = string.gsub
 
+local MODULAR_FLASHLIGHT_MCM = {
+    page_id = "modular_flashlights",
+    range = { suffix = "_range", min = 5, max = 80 },
+    cone_deg = { suffix = "_cone_deg", min = 8, max = 90 },
+    items = {
+        {
+            section = "utlf_tactical_light",
+            mcm_key = "m600df",
+            heading = "ui_mcm_utlf_modular_flashlights_m600df",
+        },
+        {
+            section = "utlf_tactical_light_m300c",
+            mcm_key = "m300c",
+            heading = "ui_mcm_utlf_modular_flashlights_m300c",
+        },
+        {
+            section = "utlf_tactical_light_x300",
+            mcm_key = "x300",
+            heading = "ui_mcm_utlf_modular_flashlights_x300",
+        },
+        {
+            section = "utlf_tactical_light_foxtrot1",
+            mcm_key = "foxtrot1",
+            heading = "ui_mcm_utlf_modular_flashlights_foxtrot1",
+        },
+        {
+            section = "utlf_tactical_light_olight",
+            mcm_key = "olight",
+            heading = "ui_mcm_utlf_modular_flashlights_olight",
+        },
+        {
+            section = "utlf_tactical_light_streamlight",
+            mcm_key = "streamlight",
+            heading = "ui_mcm_utlf_modular_flashlights_streamlight",
+        },
+    },
+}
+
+local MODULAR_FLASHLIGHT_MCM_BY_SECTION = {}
+for _, item in ipairs(MODULAR_FLASHLIGHT_MCM.items) do
+    MODULAR_FLASHLIGHT_MCM_BY_SECTION[item.section] = item
+end
+
 local function defaults()
     return utlf_core.DEFAULTS
 end
 
-function light_profile_for_item(item_section)
+local function base_light_profile_for_item(item_section)
     local d = defaults()
     local copy = {
         light_type = 2,
@@ -39,6 +82,56 @@ function light_profile_for_item(item_section)
     copy.color = utlf_parse.section_string(item_section, "light_color", copy.color)
     copy.light_bone = utlf_parse.section_string(item_section, "light_bone", copy.light_bone)
     copy.light_direction = utlf_parse.vector3(utlf_parse.section_string(item_section, "light_direction", nil), copy.light_direction)
+
+    return copy
+end
+
+local function modular_mcm_option(item, field)
+    local spec = MODULAR_FLASHLIGHT_MCM[field]
+    return item.mcm_key .. spec.suffix, spec.min, spec.max
+end
+
+function modular_flashlight_mcm_entries()
+    local entries = {}
+
+    for _, item in ipairs(MODULAR_FLASHLIGHT_MCM.items) do
+        local profile = base_light_profile_for_item(item.section)
+        local range_id, range_min, range_max = modular_mcm_option(item, "range")
+        local cone_id, cone_min, cone_max = modular_mcm_option(item, "cone_deg")
+
+        entries[#entries + 1] = {
+            section = item.section,
+            mcm_key = item.mcm_key,
+            heading = item.heading,
+            range = { id = range_id, def = profile.range, min = range_min, max = range_max },
+            cone_deg = { id = cone_id, def = profile.cone_deg, min = cone_min, max = cone_max },
+        }
+    end
+
+    return entries
+end
+
+function light_profile_for_item(item_section)
+    local copy = base_light_profile_for_item(item_section)
+    local item = MODULAR_FLASHLIGHT_MCM_BY_SECTION[item_section]
+    if not item then
+        return copy
+    end
+
+    local range_id, range_min, range_max = modular_mcm_option(item, "range")
+    local cone_id, cone_min, cone_max = modular_mcm_option(item, "cone_deg")
+    copy.range = utlf_core.get_mcm_number(
+        utlf_core.config_path(MODULAR_FLASHLIGHT_MCM.page_id, range_id),
+        copy.range,
+        range_min,
+        range_max
+    )
+    copy.cone_deg = utlf_core.get_mcm_number(
+        utlf_core.config_path(MODULAR_FLASHLIGHT_MCM.page_id, cone_id),
+        copy.cone_deg,
+        cone_min,
+        cone_max
+    )
 
     return copy
 end

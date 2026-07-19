@@ -10,6 +10,12 @@
     <string id="ui_mcm_menu_utlf_framework">
         <text>Framework</text>
     </string>
+    <string id="ui_mcm_menu_modular_flashlights">
+        <text>Modular Flashlights</text>
+    </string>
+    <string id="ui_mcm_menu_utlf_modular_flashlights">
+        <text>Modular Flashlights</text>
+    </string>
     <string id="ui_mcm_utlf_controls_title">
         <text>Controls</text>
     </string>
@@ -27,5 +33,41 @@
     </string>
     <string id="ui_mcm_utlf_toggle_modifier_desc">
         <text>Modifier key required together with the toggle key. Set to None if you want the toggle key to work without Shift, Ctrl, or Alt.</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_title">
+        <text>Modular Flashlights</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_description">
+        <text>Adjust the beam range and cone angle for each bundled modular flashlight. These controls do not change item prices.</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_m600df">
+        <text>M600DF</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_m300c">
+        <text>M300C</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_x300">
+        <text>X300U-B</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_foxtrot1">
+        <text>FOXTROT1X</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_olight">
+        <text>BALDR Pro</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_streamlight">
+        <text>TLR-1 HL</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_range">
+        <text>Beam range</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_range_desc">
+        <text>Maximum beam distance. Higher values reach farther.</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_cone_deg">
+        <text>Cone angle</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_cone_deg_desc">
+        <text>Beam width in degrees. Lower values make a tighter beam; higher values make a wider beam.</text>
     </string>
 </string_table>

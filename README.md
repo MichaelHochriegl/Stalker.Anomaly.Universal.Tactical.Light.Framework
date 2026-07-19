@@ -6,7 +6,7 @@ Generic scripted tactical light framework for S.T.A.L.K.E.R. Anomaly / GAMMA wea
 
 - Anomaly/GAMMA with Modded Exes support for `attachment_script_light`.
 - At least one weapon compatibility patch that registers supported weapon sections.
-- MCM is optional, but required to change the default keybind.
+- MCM is optional; without it, UTLF uses the default keybind and modular flashlight emitter values.
 
 ## Installation
 
@@ -17,6 +17,7 @@ Enable `Universal Tactical Light Framework` before any UTLF weapon compatibility
 - Press the UTLF toggle key combo to toggle the scripted weapon tactical light.
 - The default combo is `Alt + L`.
 - The key and modifier can be changed in MCM under `Universal Tactical Light Framework` > `Framework`.
+- The six bundled modular flashlight models have independent range and cone controls in MCM under `Universal Tactical Light Framework` > `Modular Flashlights`.
 - The input handler consumes the configured combo press/release and suppresses the vanilla torch helper for that input, so `Alt + L` should not toggle the vanilla headlamp while UTLF is active.
 
 ## Modular Tactical Light Item
@@ -41,6 +42,14 @@ Current modular flashlight item profiles:
 | `utlf_tactical_light` | M600DF | `36000` | `0.156` | `40` | `62` | `utlf\lights\spot_flood` | `1.00,0.96,0.88,0.55` |
 
 For modular weapon profiles, drag one of these items onto a supported weapon in the inventory. UTLF stores the attached item on that specific weapon, adds an inventory icon layer, creates a visible scripted attachment model when the weapon is drawn, and returns the item when detached through the inventory context menu.
+
+### Modular Flashlight MCM Controls
+
+When MCM is available, `Universal Tactical Light Framework` > `Modular Flashlights` provides twelve independent sliders: beam range and cone angle for M600DF, M300C, X300U-B, FOXTROT1X, BALDR Pro, and TLR-1 HL. Their defaults come directly from each item's `light_range` and `light_cone_deg` LTX values, so a fresh install retains the profiles listed above.
+
+These settings affect only the six bundled UTLF modular flashlight item sections; third-party modular flashlight items continue to use their own LTX emitter settings. Changing a setting immediately recreates an enabled active modular light while preserving its saved module, visible attachment, and on/off state. If MCM is unavailable, an option has not been saved, or its saved value is invalid, UTLF uses the item's static LTX value instead.
+
+The page does not configure `cost` or buy/sell price. All item prices remain the unchanged LTX values shown in the profile table above.
 
 ## Optional Integrations
 
