@@ -6,6 +6,14 @@ local function default_toggle_modifier()
     return utlf and utlf.get_default_toggle_modifier and utlf.get_default_toggle_modifier() or 3
 end
 
+local function modular_flashlight_entries()
+    if utlf_items and utlf_items.modular_flashlight_mcm_entries then
+        return utlf_items.modular_flashlight_mcm_entries()
+    end
+
+    return {}
+end
+
 local function framework_page()
     return {
         id = "framework",
@@ -31,6 +39,53 @@ local function framework_page()
     }
 end
 
+local function modular_flashlights_page()
+    local controls = {
+        { id = "title", type = "desc", clr = { 200, 200, 255, 200 }, text = "ui_mcm_utlf_modular_flashlights_title" },
+        { id = "description", type = "desc", text = "ui_mcm_utlf_modular_flashlights_description" },
+    }
+
+    for _, item in ipairs(modular_flashlight_entries()) do
+        controls[#controls + 1] = { id = item.mcm_key .. "_title", type = "desc", clr = { 200, 200, 255, 200 }, text = item.heading }
+        controls[#controls + 1] = {
+            id = item.range.id,
+            type = "track",
+            val = 2,
+            min = item.range.min,
+            max = item.range.max,
+            step = 1,
+            def = item.range.def,
+            hint = "utlf_modular_flashlights_range",
+        }
+        controls[#controls + 1] = {
+            id = item.cone_deg.id,
+            type = "track",
+            val = 2,
+            min = item.cone_deg.min,
+            max = item.cone_deg.max,
+            step = 1,
+            def = item.cone_deg.def,
+            hint = "utlf_modular_flashlights_cone_deg",
+        }
+    end
+
+    return {
+        id = "modular_flashlights",
+        sh = true,
+        gr = controls,
+    }
+end
+
+local function utlf_collection()
+    return {
+        id = "utlf",
+        gr = {
+            framework_page(),
+            modular_flashlights_page(),
+        },
+    }
+end
+
 local function ensure_collection(options)
     options = options or {}
 
@@ -48,17 +103,18 @@ end
 
 function on_mcm_load(options)
     if not options then
-        return framework_page(), "utlf"
+        return utlf_collection()
     end
 
     local collection = ensure_collection(options)
 
-    for index, page in ipairs(collection.gr) do
-        if page.id == "framework" then
+    for index = #collection.gr, 1, -1 do
+        local page = collection.gr[index]
+        if page and (page.id == "framework" or page.id == "modular_flashlights") then
             table.remove(collection.gr, index)
-            break
         end
     end
 
+    table.insert(collection.gr, 1, modular_flashlights_page())
     table.insert(collection.gr, 1, framework_page())
 end

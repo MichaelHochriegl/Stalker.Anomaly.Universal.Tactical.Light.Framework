@@ -195,6 +195,20 @@ function rebuild_active_light(reason)
     attach_light(weapon, profile, reason or "profile changed")
 end
 
+function rebuild_active_modular_light(reason)
+    local s = state()
+    if not s.desired_on or not s.light or s.attachment_is_modular ~= true then
+        return
+    end
+
+    local weapon, profile = utlf_core.active_supported_weapon()
+    if not weapon or not profile or weapon:id() ~= s.weapon_id or not utlf_core.is_modular_profile(profile) then
+        return
+    end
+
+    rebuild_active_light(reason or "modular flashlight settings changed")
+end
+
 local function save_state()
     local s = state()
     s.desired_on = false
