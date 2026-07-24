@@ -32,16 +32,27 @@ These runtime defaults are registered by `utlf_registry.script`. The item config
 
 Current modular flashlight item profiles:
 
-| Section | Light | Cost | Weight | Range | Cone | Texture | Color |
-| --- | --- | ---: | ---: | ---: | ---: | --- | --- |
-| `utlf_tactical_light_foxtrot1` | FOXTROT1X | `14000` | `0.068` | `52` | `38` | `utlf\lights\spot_throw` | `1.00,0.95,0.86,0.55` |
-| `utlf_tactical_light_olight` | BALDR Pro | `23000` | `0.129` | `39` | `58` | `utlf\lights\spot_flood` | `1.00,0.93,0.78,0.55` |
-| `utlf_tactical_light_streamlight` | TLR-1 HL | `24000` | `0.123` | `56` | `42` | `utlf\lights\spot_throw` | `1.00,0.94,0.84,0.55` |
-| `utlf_tactical_light_x300` | X300U-B | `30000` | `0.116` | `38` | `60` | `utlf\lights\spot_flood` | `1.00,0.95,0.88,0.55` |
-| `utlf_tactical_light_m300c` | M300C | `19000` | `0.116` | `48` | `50` | `utlf\lights\spot_balanced` | `1.00,0.93,0.80,0.55` |
-| `utlf_tactical_light` | M600DF | `36000` | `0.156` | `40` | `62` | `utlf\lights\spot_flood` | `1.00,0.96,0.88,0.55` |
+| Section                           | Light     |    Cost |  Weight | Range | Cone | Texture                     | Color                 |
+|-----------------------------------|-----------|--------:|--------:|------:|-----:|-----------------------------|-----------------------|
+| `utlf_tactical_light_foxtrot1`    | FOXTROT1X | `14000` | `0.068` |  `52` | `38` | `utlf\lights\spot_throw`    | `1.00,0.95,0.86,0.55` |
+| `utlf_tactical_light_olight`      | BALDR Pro | `23000` | `0.129` |  `39` | `58` | `utlf\lights\spot_flood`    | `1.00,0.93,0.78,0.55` |
+| `utlf_tactical_light_streamlight` | TLR-1 HL  | `24000` | `0.123` |  `56` | `42` | `utlf\lights\spot_throw`    | `1.00,0.94,0.84,0.55` |
+| `utlf_tactical_light_x300`        | X300U-B   | `30000` | `0.116` |  `38` | `60` | `utlf\lights\spot_flood`    | `1.00,0.95,0.88,0.55` |
+| `utlf_tactical_light_m300c`       | M300C     | `19000` | `0.116` |  `48` | `50` | `utlf\lights\spot_balanced` | `1.00,0.93,0.80,0.55` |
+| `utlf_tactical_light`             | M600DF    | `36000` | `0.156` |  `40` | `62` | `utlf\lights\spot_flood`    | `1.00,0.96,0.88,0.55` |
+
 
 For modular weapon profiles, drag one of these items onto a supported weapon in the inventory. UTLF stores the attached item on that specific weapon, adds an inventory icon layer, creates a visible scripted attachment model when the weapon is drawn, and returns the item when detached through the inventory context menu.
+
+### GAMMA/DLTX Trader Availability
+
+Traders sell all six modular flashlights depending on the supply level:
+
+- Supply level 1: FOXTROT1X and M300C.
+- Supply level 2: FOXTROT1X, M300C, and BALDR Pro.
+- Supply level 3: FOXTROT1X, M300C, BALDR Pro, and TLR-1 HL.
+- Supply level 4: FOXTROT1X, M300C, BALDR Pro, TLR-1 HL, and X300U-B.
+- Supply level 5: FOXTROT1X, M300C, BALDR Pro, TLR-1 HL, X300U-B, and M600DF.
 
 ### Modular Flashlight MCM Controls
 
@@ -116,20 +127,20 @@ Deprecated compatibility shims `setup_configured_pack(pack_name, profile, config
 
 Compatibility patches should call the small facade in `utlf.script` instead of internal modules:
 
-| Function | Use |
-| --- | --- |
-| `register_pack(pack_name, profiles)` | Register one or more tested weapon profiles from a patch. |
-| `register_light(section, profile)` | Register a single weapon section/profile pair when a pack table is unnecessary. |
-| `register_attachment_group(group_name, sections)` | Add reusable modular flashlight groups for patch-specific item allow-lists. |
-| `setup_builtin_light_pack(pack_name, profile, config)` | Register a configurable built-in light profile and rebuild the active light after MCM changes. |
-| `setup_configured_pack(pack_name, profile, config)` | Deprecated compatibility shim; use `setup_builtin_light_pack(...)` for MCM-backed built-in packs. |
-| `register_configured_pack(pack_name, profile, config)` | Deprecated compatibility shim; use `register_pack(...)` for direct non-MCM registration. |
-| `clamp_number(value, fallback, min, max)` | Clamp numeric configuration values when a patch reads its own non-MCM source. |
-| `get_mcm_number(path, fallback, min, max)` | Read and clamp optional numeric MCM values with a fallback when MCM is unavailable. |
-| `get_default_toggle_key()` | Read the framework default toggle key for UI/config integration. |
-| `get_default_toggle_modifier()` | Read the framework default toggle modifier for UI/config integration. |
-| `rebuild_active_light(reason)` | Recreate the currently active scripted light after a patch changes profile data or settings. |
-| `on_option_change()` | Framework option-change callback; patches normally use `setup_builtin_light_pack()` instead of calling this directly. |
+| Function                                               | Use                                                                                                                   |
+|--------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| `register_pack(pack_name, profiles)`                   | Register one or more tested weapon profiles from a patch.                                                             |
+| `register_light(section, profile)`                     | Register a single weapon section/profile pair when a pack table is unnecessary.                                       |
+| `register_attachment_group(group_name, sections)`      | Add reusable modular flashlight groups for patch-specific item allow-lists.                                           |
+| `setup_builtin_light_pack(pack_name, profile, config)` | Register a configurable built-in light profile and rebuild the active light after MCM changes.                        |
+| `setup_configured_pack(pack_name, profile, config)`    | Deprecated compatibility shim; use `setup_builtin_light_pack(...)` for MCM-backed built-in packs.                     |
+| `register_configured_pack(pack_name, profile, config)` | Deprecated compatibility shim; use `register_pack(...)` for direct non-MCM registration.                              |
+| `clamp_number(value, fallback, min, max)`              | Clamp numeric configuration values when a patch reads its own non-MCM source.                                         |
+| `get_mcm_number(path, fallback, min, max)`             | Read and clamp optional numeric MCM values with a fallback when MCM is unavailable.                                   |
+| `get_default_toggle_key()`                             | Read the framework default toggle key for UI/config integration.                                                      |
+| `get_default_toggle_modifier()`                        | Read the framework default toggle modifier for UI/config integration.                                                 |
+| `rebuild_active_light(reason)`                         | Recreate the currently active scripted light after a patch changes profile data or settings.                          |
+| `on_option_change()`                                   | Framework option-change callback; patches normally use `setup_builtin_light_pack()` instead of calling this directly. |
 
 Parser helpers are internal and are not part of the compatibility-patch API.
 
