@@ -41,7 +41,15 @@ Current modular flashlight item profiles:
 | `utlf_tactical_light_m300c` | M300C | `19000` | `0.116` | `48` | `50` | `utlf\lights\spot_balanced` | `1.00,0.93,0.80,0.55` |
 | `utlf_tactical_light` | M600DF | `36000` | `0.156` | `40` | `62` | `utlf\lights\spot_flood` | `1.00,0.96,0.88,0.55` |
 
-For modular weapon profiles, drag one of these items onto a supported weapon in the inventory. UTLF stores the attached item on that specific weapon, adds an inventory icon layer, creates a visible scripted attachment model when the weapon is drawn, and returns the item when detached through the inventory context menu.
+### GAMMA/DLTX Trader Availability
+
+Traders sell all six modular flashlights depending on the supply level:
+
+- Supply level 1: FOXTROT1X and M300C.
+- Supply level 2: FOXTROT1X, M300C, and BALDR Pro.
+- Supply level 3: FOXTROT1X, M300C, BALDR Pro, and TLR-1 HL.
+- Supply level 4: FOXTROT1X, M300C, BALDR Pro, TLR-1 HL, and X300U-B.
+- Supply level 5: FOXTROT1X, M300C, BALDR Pro, TLR-1 HL, X300U-B, and M600DF.
 
 ### Modular Flashlight MCM Controls
 
