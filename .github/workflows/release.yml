@@ -27,11 +27,13 @@ jobs:
           mkdir -p "$STAGING_DIR"
 
           cp -r gamedata "$STAGING_DIR/"
+          cp -r fomod "$STAGING_DIR/"
           cp README.md "$STAGING_DIR/"
           cp meta.ini "$STAGING_DIR/"
 
           sed -i "s/^version=.*/version=${VERSION}/" "$STAGING_DIR/meta.ini"
           sed -i "s/^installationFile=.*/installationFile=${ARCHIVE_NAME}/" "$STAGING_DIR/meta.ini"
+          sed -i "s|<Version>[^<]*</Version>|<Version>${VERSION}</Version>|" "$STAGING_DIR/fomod/info.xml"
 
           zip -r "$ARCHIVE_NAME" "$STAGING_DIR"
 

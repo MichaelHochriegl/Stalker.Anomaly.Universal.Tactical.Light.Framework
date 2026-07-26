@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fomod>
+  <Name>Universal Tactical Light Framework</Name>
+  <Author>Michael Hochriegl</Author>
+  <Version>0.0.0</Version>
+  <Description>Generic scripted tactical light framework for S.T.A.L.K.E.R. Anomaly / GAMMA weapon mods.</Description>
+  <Website>https://github.com/MichaelHochriegl/Stalker.Anomaly.Universal.Tactical.Light.Framework</Website>
+</fomod>
