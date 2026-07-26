@@ -10,6 +10,16 @@ Generic scripted tactical light framework for S.T.A.L.K.E.R. Anomaly / GAMMA wea
 
 ## Installation
 
+Install the release archive through MO2.
+Options during installation:
+
+1. **Flashlight pricing**
+   - **Default GAMMA pricing** (selected by default) installs the lower prices for the six UTLF lights and leaves GAMMA's hand torch and headlamp prices untouched.
+   - **Increased flashlight prices** installs the higher UTLF prices and overrides the costs for GAMMA's hand torch and headlamp.
+2. **Flashlight textures**
+   - **Normal flashlight textures** (selected by default) flashlights are colored black.
+   - **Tan flashlight textures** flashlights are colored tan.
+
 Enable `Universal Tactical Light Framework` before any UTLF weapon compatibility patch in MO2 so patch scripts can call the framework during startup. This framework provides the runtime and default tactical light items; compatibility patches provide the weapon registrations and profile data.
 
 ## Controls
@@ -30,17 +40,23 @@ UTLF provides real inventory addon items:
 
 These runtime defaults are registered by `utlf_registry.script`. The item config also mirrors the group names under `[utlf_tactical_light_groups]` for reference.
 
-Current modular flashlight item profiles:
+Current modular flashlight item and pricing profiles:
 
-| Section                           | Light     |    Cost |  Weight | Range | Cone | Texture                     | Color                 |
-|-----------------------------------|-----------|--------:|--------:|------:|-----:|-----------------------------|-----------------------|
-| `utlf_tactical_light_foxtrot1`    | FOXTROT1X | `14000` | `0.068` |  `52` | `38` | `utlf\lights\spot_throw`    | `1.00,0.95,0.86,0.55` |
-| `utlf_tactical_light_olight`      | BALDR Pro | `23000` | `0.129` |  `39` | `58` | `utlf\lights\spot_flood`    | `1.00,0.93,0.78,0.55` |
-| `utlf_tactical_light_streamlight` | TLR-1 HL  | `24000` | `0.123` |  `56` | `42` | `utlf\lights\spot_throw`    | `1.00,0.94,0.84,0.55` |
-| `utlf_tactical_light_x300`        | X300U-B   | `30000` | `0.116` |  `38` | `60` | `utlf\lights\spot_flood`    | `1.00,0.95,0.88,0.55` |
-| `utlf_tactical_light_m300c`       | M300C     | `19000` | `0.116` |  `48` | `50` | `utlf\lights\spot_balanced` | `1.00,0.93,0.80,0.55` |
-| `utlf_tactical_light`             | M600DF    | `36000` | `0.156` |  `40` | `62` | `utlf\lights\spot_flood`    | `1.00,0.96,0.88,0.55` |
+| Section                           | Light     | Default cost | Increased cost |  Weight | Range | Cone | Texture                     | Color                 |
+|-----------------------------------|-----------|-------------:|---------------:|--------:|------:|-----:|-----------------------------|-----------------------|
+| `utlf_tactical_light_foxtrot1`    | FOXTROT1X |      `1,500` |        `3,600` | `0.068` |  `52` | `38` | `utlf\lights\spot_throw`    | `1.00,0.95,0.86,0.55` |
+| `utlf_tactical_light_m300c`       | M300C     |      `2,000` |        `4,900` | `0.116` |  `48` | `50` | `utlf\lights\spot_balanced` | `1.00,0.93,0.80,0.55` |
+| `utlf_tactical_light_olight`      | BALDR Pro |      `2,400` |        `5,900` | `0.129` |  `39` | `58` | `utlf\lights\spot_flood`    | `1.00,0.93,0.78,0.55` |
+| `utlf_tactical_light_streamlight` | TLR-1 HL  |      `2,500` |        `6,100` | `0.123` |  `56` | `42` | `utlf\lights\spot_throw`    | `1.00,0.94,0.84,0.55` |
+| `utlf_tactical_light_x300`        | X300U-B   |      `3,200` |        `7,700` | `0.116` |  `38` | `60` | `utlf\lights\spot_flood`    | `1.00,0.95,0.88,0.55` |
+| `utlf_tactical_light`             | M600DF    |      `3,800` |        `9,200` | `0.156` |  `40` | `62` | `utlf\lights\spot_flood`    | `1.00,0.96,0.88,0.55` |
 
+The increased FOMOD option overrides the GAMMA costs as follows:
+
+| GAMMA section        | Device     | Default GAMMA pricing | Increased pricing |
+|----------------------|------------|-----------------------|------------------:|
+| `device_flashlight`  | Hand torch | No UTLF override      |           `9,000` |
+| `device_torch_dummy` | Headlamp   | No UTLF override      |          `14,000` |
 
 For modular weapon profiles, drag one of these items onto a supported weapon in the inventory. UTLF stores the attached item on that specific weapon, adds an inventory icon layer, creates a visible scripted attachment model when the weapon is drawn, and returns the item when detached through the inventory context menu.
 
@@ -56,11 +72,9 @@ Traders sell all six modular flashlights depending on the supply level:
 
 ### Modular Flashlight MCM Controls
 
-When MCM is available, `Universal Tactical Light Framework` > `Modular Flashlights` provides twelve independent sliders: beam range and cone angle for M600DF, M300C, X300U-B, FOXTROT1X, BALDR Pro, and TLR-1 HL. Their defaults come directly from each item's `light_range` and `light_cone_deg` LTX values, so a fresh install retains the profiles listed above.
+When MCM is available, `Universal Tactical Light Framework` > `Modular Flashlights` provides twelve independent sliders: beam range and cone angle for M600DF, M300C, X300U-B, FOXTROT1X, BALDR Pro, and TLR-1 HL.
 
 These settings affect only the six bundled UTLF modular flashlight item sections; third-party modular flashlight items continue to use their own LTX emitter settings. Changing a setting immediately recreates an enabled active modular light while preserving its saved module, visible attachment, and on/off state. If MCM is unavailable, an option has not been saved, or its saved value is invalid, UTLF uses the item's static LTX value instead.
-
-The page does not configure `cost` or buy/sell price. All item prices remain the unchanged LTX values shown in the profile table above.
 
 ## Optional Integrations
 
@@ -235,13 +249,13 @@ If a built-in weapon profile or modular flashlight item flickers or is too expen
 
 ## Maintainer Checks
 
-Run the deterministic beam asset check before release:
+Run the static checks before release:
 
 ```sh
 python3 tools/generate_utlf_light_profiles.py --check
 ```
 
-The release workflow creates `Universal_Tactical_Light_Framework-<version>.zip` from `gamedata/`, `README.md`, and `meta.ini`, then stamps `meta.ini` with the tag-derived version and archive name. Generated PNG previews and the contact sheet under `tools/light_profile_previews/` stay outside release archives.
+The release workflow creates `Universal_Tactical_Light_Framework-<version>.zip` from `gamedata/`, `fomod/`, `README.md`, and `meta.ini`.
 
 ## Notes For Weapon Authors
 

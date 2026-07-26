@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="http://qconsulting.ca/fo3/ModConfig5.0.xsd">
+  <moduleName>Universal Tactical Light Framework</moduleName>
+  <requiredInstallFiles>
+    <folder source="gamedata" destination="gamedata" priority="0" />
+    <file source="README.md" destination="README.md" priority="0" />
+    <file source="meta.ini" destination="meta.ini" priority="0" />
+  </requiredInstallFiles>
+  <installSteps order="Explicit">
+    <installStep name="Flashlight pricing">
+      <optionalFileGroups order="Explicit">
+        <group name="Choose one pricing profile" type="SelectExactlyOne">
+          <plugins order="Explicit">
+            <plugin name="Default GAMMA pricing">
+              <description>UTLF prices: FOXTROT1X 1,500; M300C 2,000; BALDR Pro 2,400; TLR-1 HL 2,500; X300U-B 3,200; M600DF 3,800. Does not override GAMMA's hand torch or headlamp.</description>
+              <typeDescriptor>
+                <type name="Recommended" />
+              </typeDescriptor>
+            </plugin>
+            <plugin name="Increased flashlight prices">
+              <description>UTLF prices: FOXTROT1X 3,600; M300C 4,900; BALDR Pro 5,900; TLR-1 HL 6,100; X300U-B 7,700; M600DF 9,200. Also caps GAMMA's hand torch at 9,000 and headlamp at 14,000.</description>
+              <files>
+                <file source="fomod\options\pricing\increased\gamedata\configs\mod_system_zzz_utlf_pricing.ltx" destination="gamedata\configs\mod_system_zzz_utlf_pricing.ltx" priority="10" />
+              </files>
+              <typeDescriptor>
+                <type name="Optional" />
+              </typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+    <installStep name="Flashlight textures">
+      <optionalFileGroups order="Explicit">
+        <group name="Choose one texture set" type="SelectExactlyOne">
+          <plugins order="Explicit">
+            <plugin name="Normal flashlight textures">
+              <description>Flashlights use black textures (Credits: Kmack)</description>
+              <typeDescriptor>
+                <type name="Recommended" />
+              </typeDescriptor>
+            </plugin>
+            <plugin name="Tan flashlight textures">
+              <description>Flashlights use tan textures (Credits: Kmack)</description>
+              <files>
+                <folder source="fomod\options\textures\tan\gamedata\textures\wpn\accessories" destination="gamedata\textures\wpn\accessories" priority="10" />
+              </files>
+              <typeDescriptor>
+                <type name="Optional" />
+              </typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+  </installSteps>
+</config>
