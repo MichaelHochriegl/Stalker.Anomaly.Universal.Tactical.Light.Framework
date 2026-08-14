@@ -21,6 +21,7 @@ local function clear_light_refs(reason, had_light)
     s.attachment_name = nil
     s.attachment_is_modular = false
     s.light = nil
+    s.hud_item_light_suspended = false
 end
 
 function detach_light(reason, stale_only, keep_attachment)
@@ -65,6 +66,44 @@ end
 function detach_current_light(reason, stale_only)
     local s = state()
     detach_light(reason, stale_only, s.attachment_is_modular == true)
+end
+
+function suspend_for_non_weapon_hud_item(reason)
+    local s = state()
+    if not s.desired_on or not s.light or s.hud_item_light_suspended then
+        return false
+    end
+
+    local ok, err = pcall(function()
+        s.light.enabled = false
+    end)
+    if not ok then
+        printf("[utlf] failed to suspend light for HUD item: %s", tostring(err))
+        return false
+    end
+
+    s.hud_item_light_suspended = true
+    printf("[utlf] suspended light%s", reason and (": " .. reason) or "")
+    return true
+end
+
+function resume_after_non_weapon_hud_item(weapon, reason)
+    local s = state()
+    if not s.hud_item_light_suspended or not s.desired_on or not s.light or not weapon or weapon:id() ~= s.weapon_id then
+        return false
+    end
+
+    local ok, err = pcall(function()
+        s.light.enabled = true
+    end)
+    if not ok then
+        printf("[utlf] failed to resume light after HUD item: %s", tostring(err))
+        return false
+    end
+
+    s.hud_item_light_suspended = false
+    printf("[utlf] resumed light%s", reason and (": " .. reason) or "")
+    return true
 end
 
 local function create_built_in_attachment(weapon, profile, hud)
@@ -209,13 +248,66 @@ function rebuild_active_modular_light(reason)
     rebuild_active_light(reason or "modular flashlight settings changed")
 end
 
-local function save_state()
+function restore_light_after_load(weapon, profile)
     local s = state()
-    s.desired_on = false
+    local saved = s.saved_light_state
+    if not saved or not weapon or not profile or weapon:id() ~= saved.weapon_id or weapon:section() ~= saved.section then
+        return false
+    end
+
+    s.desired_on = true
+    attach_light(weapon, profile, "restoring saved light state")
+    if not s.light then
+        return false
+    end
+
+    s.saved_light_state = nil
+    return true
+end
+
+local function restore_saved_light_if_active()
+    local weapon, profile = utlf_core.active_supported_weapon()
+    if weapon and profile then
+        restore_light_after_load(weapon, profile)
+    end
+end
+
+local function save_state(m_data)
+    local s = state()
+    if m_data then
+        -- Script attachments are not serialized, but the live emitter must not
+        -- be removed just because the player is saving.
+        m_data.utlf_light_state = nil
+        if s.desired_on and s.light and s.weapon_id and s.section then
+            m_data.utlf_light_state = {
+                enabled = true,
+                weapon_id = s.weapon_id,
+                section = s.section,
+            }
+        end
+    end
+
     utlf_core.clear_replacement()
-    detach_current_light("saving")
+end
+
+local function load_state(m_data)
+    local saved = m_data and m_data.utlf_light_state
+    local s = state()
+    s.saved_light_state = nil
+
+    if type(saved) ~= "table" or saved.enabled ~= true or not saved.weapon_id or not saved.section then
+        return
+    end
+
+    s.saved_light_state = {
+        weapon_id = saved.weapon_id,
+        section = saved.section,
+    }
+    restore_saved_light_if_active()
 end
 
 function on_game_start()
     RegisterScriptCallback("save_state", save_state)
+    RegisterScriptCallback("load_state", load_state)
+    RegisterScriptCallback("actor_on_first_update", restore_saved_light_if_active)
 end

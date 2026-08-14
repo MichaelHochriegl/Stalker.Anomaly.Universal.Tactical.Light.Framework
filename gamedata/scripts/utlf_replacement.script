@@ -80,31 +80,24 @@ local function wrap_magnifier_switch()
     printf("[utlf] wrapped 3DSS magnifier switch")
 end
 
-local function actor_on_hud_animation_play(anim_table, weapon)
+local function actor_on_hud_animation_play(anim_table, item)
     if not anim_table or not anim_table.anm_name or not strfind(anim_table.anm_name, "^anm_show") then
         return
     end
 
-    local active = db.actor and db.actor:active_item()
-    if not active or not utlf_core.safe_is_weapon(active) then
-        return
-    end
-
+    local active = item or (db.actor and db.actor:active_item())
     local s = state()
+    if not active or not utlf_core.safe_is_weapon(active) then
+        -- HUD attachments stop updating while the PDA or another device is shown.
+        -- Disable the light until the same weapon's draw animation resumes it.
+        utlf_lights.suspend_for_non_weapon_hud_item("non-weapon HUD item shown")
+        return
+    end
+
     local profile = utlf_core.profile_for_section(active:section())
-    if s.light and s.weapon_id and active:id() ~= s.weapon_id and not profile then
-        s.desired_on = false
-        utlf_core.clear_replacement()
-        utlf_lights.detach_current_light("active weapon changed")
-        return
-    end
-
-    if not profile then
-        return
-    end
-
-    if s.light and s.weapon_id and active:id() ~= s.weapon_id then
-        if utlf_core.replacement_pending() and (not s.replacement_target_section or active:section() == s.replacement_target_section) then
+    local same_light_weapon = s.weapon_id and active:id() == s.weapon_id
+    if s.light and not same_light_weapon then
+        if profile and utlf_core.replacement_pending() and (not s.replacement_target_section or active:section() == s.replacement_target_section) then
             utlf_lights.detach_current_light("weapon object replaced", true)
             schedule_reattach_after_replacement(profile, active:section())
         else
@@ -112,7 +105,15 @@ local function actor_on_hud_animation_play(anim_table, weapon)
             utlf_core.clear_replacement()
             utlf_lights.detach_current_light("active weapon changed")
         end
+        return
     end
+
+    if not profile then
+        return
+    end
+
+    utlf_lights.restore_light_after_load(active, profile)
+    utlf_lights.resume_after_non_weapon_hud_item(active, "weapon HUD item shown")
 
     if utlf_core.is_modular_profile(profile) then
         utlf_modular.ensure_attachment(active, profile)

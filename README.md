@@ -50,6 +50,7 @@ Enable `Universal Tactical Light Framework` before any UTLF weapon compatibility
 - The key and modifier can be changed in MCM under `Universal Tactical Light Framework` > `Framework`.
 - The six bundled modular flashlight models have independent range and cone controls in MCM under `Universal Tactical Light Framework` > `Modular Flashlights`.
 - The input handler consumes the configured combo press/release and suppresses the vanilla torch helper for that input, so `Alt + L` should not toggle the vanilla headlamp while UTLF is active.
+- An enabled tactical light stays enabled through saving and loading, and restores when the same weapon is drawn after loading.
 
 ## Modular Tactical Light Item
 
@@ -297,7 +298,7 @@ UTLF avoids `actor_on_update`. Modular attachments are created on HUD draw anima
 - `utlf_profile.script`: profile copying, section normalization, profile normalization, mount parsing/resolution, allowed attachment checks, and vector/color helpers.
 - `utlf_registry.script`: registered weapon profiles, attachment groups, profile lookup, and active supported weapon lookup.
 - `utlf_items.script`: modular flashlight item config, saved modular item state, item light profiles, and modular model lookup.
-- `utlf_lights.script`: scripted light lifecycle, built-in carrier attachments, rebuilds, and save cleanup.
+- `utlf_lights.script`: scripted light lifecycle, built-in carrier attachments, rebuilds, and save/load restoration.
 - `utlf_replacement.script`: 3DSS magnifier replacement wrapping, delayed light transfer, and HUD draw replacement repair.
 - `utlf_input.script`: toggle key handling, vanilla torch suppression, modifier checks, and click sound playback.
 - `utlf_modular.script`: nested modular mount and visible tactical light attachment creation/removal.
