@@ -100,7 +100,7 @@ These settings affect only the six bundled UTLF modular flashlight item sections
 
 ## Optional Integrations
 
-Drag/drop attachment is the primary modular attach path. When `rax_icon_layers` is available, UTLF registers an icon overlay for weapons with a saved modular flashlight. When `custom_functor_autoinject` is available, UTLF adds an inventory context action to detach the saved modular flashlight and return the item.
+Drag/drop attachment is the primary modular attach path. When `rax_icon_layers` is available, UTLF registers an icon overlay for weapons with a saved modular flashlight. When `custom_functor_autoinject` is available, UTLF adds inventory context actions to detach saved modular flashlights and unload usable batteries.
 
 ## MCM Pages
 
@@ -136,6 +136,8 @@ local PACK_NAME = "My Weapon Pack"
 local PROFILE = {
     sections = { "wpn_my_weapon", "wpn_my_weapon_alt" },
     mode = "built_in",
+    battery_type = "batteries_dead",
+    battery_consumption = 0.01,
 }
 
 local CONFIG = {
@@ -202,6 +204,8 @@ Built-in-only fields:
 - `cone_deg`: spot cone angle in degrees. Defaults to `24`.
 - `color`: `{ r, g, b, a }`. Defaults to warm white.
 - `texture`: light texture. Defaults to `internal\internal_tactical_torch`.
+- `battery_type`: inventory section of the battery accepted when dragged onto the weapon. Defaults to `batteries_dead`.
+- `battery_consumption`: battery draw in Anomaly device-consumption units. Defaults to `0.01`; negative values are clamped to `0`. UTLF also accepts `battery_consumption_rate` as an alias.
 
 Modular-only fields:
 
@@ -240,8 +244,18 @@ Modular tactical light item fields:
 - `light_shadow`: item-specific dynamic shadow toggle.
 - `light_hud_mode`: item-specific HUD lighting path toggle.
 - `light_volumetric`, `light_volumetric_distance`, `light_volumetric_intensity`, `light_volumetric_quality`: item-specific volumetric settings.
+- `battery_type`: inventory section of the battery accepted when dragged onto a weapon carrying this flashlight. Defaults to `batteries_dead`.
+- `battery_consumption`: item-specific battery draw in Anomaly device-consumption units. Defaults to `0.01`; `battery_consumption_rate` is accepted as an alias.
 
 Each modular flashlight item defines its own model and emitter settings. Weapon patches define which flashlight items are allowed, where they are mounted, and any mount-specific beam direction correction; modular weapon profiles do not control `range`, `cone_deg`, `texture`, `color`, `light_bone`, or other emitter behavior.
+
+### Batteries And Drainage
+
+UTLF keeps battery charge per weapon without changing weapon durability. Existing weapons and modular attachments from saves made before battery support receive one full default battery the first time their light is used. A light automatically switches off at Anomaly's standard critical charge of `0.05`.
+
+Drag the configured battery item onto a supported weapon, or directly onto a modular flashlight in the inventory, to replace its battery. If the previous battery still has usable charge, UTLF returns it to the actor inventory with that charge preserved. When `custom_functor_autoinject` is available, weapon and modular-flashlight context menus also expose Anomaly's standard unload-battery action. Modular flashlight items retain their charge when attached, detached, or swapped.
+
+Drain is time-normalized to Anomaly's device model at 60 updates per second: `battery_consumption * 60 / 1000` condition per real-time second at the normal battery-consumption difficulty factor. Pausing the game or temporarily suspending the emitter for a non-weapon HUD item does not consume charge. The six bundled lights use `batteries_dead` and define individual rates in `mod_system_utlf_items.ltx`; third-party definitions that omit either field use the defaults above.
 
 Weapon patches can define additional attachment groups through:
 
@@ -287,7 +301,7 @@ Use `mode = "modular"` for weapons where the player should attach/detach a flash
 
 Tactical light state is not transferred across normal weapon switches. The framework only reattaches automatically during a known 3DSS magnifier replacement, where the old weapon object is intentionally swapped for another registered section.
 
-UTLF avoids `actor_on_update`. Modular attachments are created on HUD draw animations, inventory drag/drop attaches the saved item state, and known 3DSS replacement repair uses one-shot time events.
+UTLF avoids `actor_on_update`. Modular attachments are created on HUD draw animations, inventory drag/drop attaches the saved item state, battery drain is processed by a single lightweight time event while a light is enabled, and known 3DSS replacement repair uses one-shot time events.
 
 ## Internal Script Layout
 
@@ -298,6 +312,7 @@ UTLF avoids `actor_on_update`. Modular attachments are created on HUD draw anima
 - `utlf_profile.script`: profile copying, section normalization, profile normalization, mount parsing/resolution, allowed attachment checks, and vector/color helpers.
 - `utlf_registry.script`: registered weapon profiles, attachment groups, profile lookup, and active supported weapon lookup.
 - `utlf_items.script`: modular flashlight item config, saved modular item state, item light profiles, and modular model lookup.
+- `utlf_battery.script`: per-weapon charge persistence, battery inventory interactions, time-normalized drain, and depletion handling.
 - `utlf_lights.script`: scripted light lifecycle, built-in carrier attachments, rebuilds, and save/load restoration.
 - `utlf_replacement.script`: 3DSS magnifier replacement wrapping, delayed light transfer, and HUD draw replacement repair.
 - `utlf_input.script`: toggle key handling, vanilla torch suppression, modifier checks, and click sound playback.

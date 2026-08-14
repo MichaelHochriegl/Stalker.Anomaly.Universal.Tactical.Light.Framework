@@ -63,6 +63,8 @@ local function base_light_profile_for_item(item_section)
         color = nil,
         light_bone = d.LIGHT_BONE,
         light_direction = utlf_parse.vector3(d.LIGHT_DIRECTION, { x = 0, y = 0, z = 0 }),
+        battery_type = d.BATTERY_TYPE,
+        battery_consumption = d.BATTERY_CONSUMPTION,
     }
 
     if not item_section then
@@ -82,6 +84,16 @@ local function base_light_profile_for_item(item_section)
     copy.color = utlf_parse.section_string(item_section, "light_color", copy.color)
     copy.light_bone = utlf_parse.section_string(item_section, "light_bone", copy.light_bone)
     copy.light_direction = utlf_parse.vector3(utlf_parse.section_string(item_section, "light_direction", nil), copy.light_direction)
+    copy.battery_type = utlf_parse.section_string(item_section, "battery_type", copy.battery_type)
+    copy.battery_consumption = math.max(
+        utlf_parse.section_number(
+            item_section,
+            "battery_consumption",
+            utlf_parse.section_number(item_section, "battery_consumption_rate", copy.battery_consumption)
+        ),
+        0
+    )
+    copy.battery_consumption_rate = copy.battery_consumption
 
     return copy
 end

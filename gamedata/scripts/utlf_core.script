@@ -6,6 +6,7 @@ DEFAULTS = {
     MODULAR_VISIBLE_ATTACHMENT_NAME = "utlf_modular_tactical_light",
     MODULAR_ATTACHMENT_NAME = "utlf_modular_tactical_light",
     MODULAR_VAR = "utlf_tactical_light",
+    BATTERY_VAR = "utlf_battery",
     ATTACHMENT_TYPE_HUD = 0,
     TOGGLE_KEY = DIK_keys.DIK_L,
     TOGGLE_MODIFIER = 3,
@@ -23,6 +24,14 @@ DEFAULTS = {
     RANGE = 26,
     CONE_DEG = 24,
     TEXTURE = "internal\\internal_tactical_torch",
+    BATTERY_TYPE = "batteries_dead",
+    BATTERY_CONSUMPTION = 0.01,
+    BATTERY_AMPER_FACTOR = 1000,
+    BATTERY_CRITICAL = 0.05,
+    BATTERY_EMPTY = 0.0001,
+    BATTERY_FULL = 0.9999,
+    BATTERY_REFERENCE_UPDATES_PER_SECOND = 60,
+    BATTERY_DRAIN_INTERVAL_MS = 250,
     REATTACH_DELAY_MS = 250,
     REPLACEMENT_WINDOW_MS = 1000,
 }
@@ -109,7 +118,11 @@ function state_weapon()
 end
 
 function clear_replacement()
-    return utlf_state.clear_replacement()
+    local result = utlf_state.clear_replacement()
+    if utlf_battery and utlf_battery.cancel_pending_transfer then
+        utlf_battery.cancel_pending_transfer()
+    end
+    return result
 end
 
 function replacement_pending()

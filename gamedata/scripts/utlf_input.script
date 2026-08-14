@@ -84,6 +84,13 @@ local function toggle_light()
         utlf_lights.detach_current_light("manual toggle")
         play_toggle_sound(false)
     else
+        if not utlf_battery.has_power(weapon, profile) then
+            if actor_menu and actor_menu.set_notification then
+                pcall(actor_menu.set_notification, nil, "ui_inGame2_notify_low_battery", 10)
+            end
+            return true
+        end
+
         s.desired_on = true
         utlf_core.clear_replacement()
         utlf_lights.attach_light(weapon, profile)

@@ -231,6 +231,12 @@ function normalize_profile(profile, section, attachment_groups)
     copy.texture = copy.texture or d.TEXTURE
     copy.light_bone = copy.light_bone or d.LIGHT_BONE
     copy.light_direction = utlf_parse.vector3(copy.light_direction or d.LIGHT_DIRECTION, { 0, 0, 0 })
+    copy.battery_type = utlf_parse.trim(copy.battery_type)
+    if not copy.battery_type or copy.battery_type == "" then
+        copy.battery_type = d.BATTERY_TYPE
+    end
+    copy.battery_consumption = math.max(tonumber(copy.battery_consumption or copy.battery_consumption_rate) or d.BATTERY_CONSUMPTION, 0)
+    copy.battery_consumption_rate = copy.battery_consumption
     copy.fire_point = copy.fire_point or d.FIRE_POINT
     copy.reattach_delay_ms = tonumber(copy.reattach_delay_ms) or d.REATTACH_DELAY_MS
     copy.replacement_window_ms = tonumber(copy.replacement_window_ms) or d.REPLACEMENT_WINDOW_MS

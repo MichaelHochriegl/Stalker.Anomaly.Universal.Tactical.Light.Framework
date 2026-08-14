@@ -28,6 +28,10 @@ function detach_light(reason, stale_only, keep_attachment)
     local s = state()
     local had_light = s.light ~= nil
 
+    if s.weapon_id and s.profile then
+        utlf_battery.stop_drain(stale_only == true)
+    end
+
     if s.light then
         pcall(function()
             s.light.enabled = false
@@ -194,7 +198,14 @@ function attach_light(weapon, profile, reason)
                 )
             end
         else
+            if not utlf_battery.has_power(weapon, light_profile) then
+                error("battery is empty")
+            end
             attachment, attachment_name = create_built_in_attachment(weapon, profile, hud)
+        end
+
+        if attachment_is_modular and not utlf_battery.has_power(weapon, light_profile) then
+            error("battery is empty")
         end
 
         local light = create_light(attachment, light_profile)
@@ -211,13 +222,17 @@ function attach_light(weapon, profile, reason)
     end)
 
     if ok and s.light then
-        utlf_core.clear_replacement()
-        printf("[utlf] enabled attached light for %s (%s)", weapon:section(), tostring(s.weapon_id))
-    else
-        s.desired_on = false
-        detach_current_light("enable failed")
-        printf("[utlf] failed to enable attached light for %s: %s", weapon:section(), tostring(err))
+        if utlf_battery.start_drain(weapon, s.profile) then
+            utlf_core.clear_replacement()
+            printf("[utlf] enabled attached light for %s (%s)", weapon:section(), tostring(s.weapon_id))
+            return
+        end
+        err = "failed to start battery drain"
     end
+
+    s.desired_on = false
+    detach_current_light("enable failed")
+    printf("[utlf] failed to enable attached light for %s: %s", weapon:section(), tostring(err))
 end
 
 function rebuild_active_light(reason)
