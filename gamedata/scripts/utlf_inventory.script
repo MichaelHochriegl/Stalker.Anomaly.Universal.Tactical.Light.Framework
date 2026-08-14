@@ -1,6 +1,53 @@
 local snd_attach = sound_object("interface\\items\\inv_items_addon_1")
 local focus_sections = {}
 local focus_section = nil
+local base_build_desc_header = nil
+
+local function flashlight_battery_percent(obj)
+    if not obj or not utlf_core.safe_is_weapon(obj) then
+        return nil
+    end
+
+    local weapon_profile = utlf_core.profile_for_section(obj:section())
+    local battery_profile = utlf_battery.profile_for_weapon(obj, weapon_profile)
+    if not battery_profile then
+        return nil
+    end
+
+    local battery = utlf_battery.battery_state_for_weapon(obj, battery_profile, false)
+    local charge = battery and battery.charge or utlf_core.DEFAULTS.BATTERY_FULL
+    return math.max(0, math.min(100, math.floor(charge * 100 + 0.5)))
+end
+
+local function flashlight_battery_status(obj)
+    local percent = flashlight_battery_percent(obj)
+    if not percent then
+        return nil
+    end
+
+    return " "
+        .. utils_xml.get_color("ui_gray_1")
+        .. game.translate_string("st_dot")
+        .. " "
+        .. game.translate_string("st_utlf_flashlight_battery")
+        .. ": "
+        .. percent
+        .. "%\\n"
+end
+
+local function build_desc_header(obj, sec, str)
+    local battery_status = flashlight_battery_status(obj)
+    if not battery_status then
+        return base_build_desc_header(obj, sec, str)
+    end
+
+    if not str then
+        local description = ini_sys:r_string_ex(sec, "description")
+        str = description and game.translate_string(description) or ""
+    end
+
+    return base_build_desc_header(obj, sec, battery_status .. str)
+end
 
 local function modular_detach_condition(obj, bag, mode)
     return mode == "inventory" and obj and utlf_core.safe_is_weapon(obj) and utlf_core.saved_modular_light(obj) ~= nil
@@ -168,6 +215,11 @@ end
 function on_game_start()
     RegisterScriptCallback("ActorMenu_on_item_drag_drop", ActorMenu_on_item_drag_drop)
     RegisterScriptCallback("ActorMenu_on_item_focus_receive", ActorMenu_on_item_focus_receive)
+
+    if not base_build_desc_header and ui_item and type(ui_item.build_desc_header) == "function" then
+        base_build_desc_header = ui_item.build_desc_header
+        ui_item.build_desc_header = build_desc_header
+    end
 
     if rax_icon_layers and rax_icon_layers.register then
         rax_icon_layers.register("utlf_icon_layer", utlf_icon_layer)

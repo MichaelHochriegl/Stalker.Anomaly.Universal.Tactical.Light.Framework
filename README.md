@@ -253,6 +253,8 @@ Each modular flashlight item defines its own model and emitter settings. Weapon 
 
 UTLF keeps battery charge per weapon without changing weapon durability. Existing weapons and modular attachments from saves made before battery support receive one full default battery the first time their light is used. A light automatically switches off at Anomaly's standard critical charge of `0.05`.
 
+Hovering a supported weapon in the inventory shows its flashlight battery percentage. Built-in lights use the weapon's stored charge; modular profiles show the charge only when a flashlight is attached.
+
 Drag the configured battery item onto a supported weapon, or directly onto a modular flashlight in the inventory, to replace its battery. If the previous battery still has usable charge, UTLF returns it to the actor inventory with that charge preserved. When `custom_functor_autoinject` is available, weapon and modular-flashlight context menus also expose Anomaly's standard unload-battery action. Modular flashlight items retain their charge when attached, detached, or swapped.
 
 Drain is time-normalized to Anomaly's device model at 60 updates per second: `battery_consumption * 60 / 1000` condition per real-time second at the normal battery-consumption difficulty factor. Pausing the game or temporarily suspending the emitter for a non-weapon HUD item does not consume charge. The six bundled lights use `batteries_dead` and define individual rates in `mod_system_utlf_items.ltx`; third-party definitions that omit either field use the defaults above.
