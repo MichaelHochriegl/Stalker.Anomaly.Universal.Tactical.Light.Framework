@@ -9,6 +9,8 @@ local state = {
     attachment_name = nil,
     attachment_is_modular = false,
     light = nil,
+    hud_item_light_suspended = false,
+    saved_light_state = nil,
     replacement_until = nil,
     replacement_target_section = nil,
 }
