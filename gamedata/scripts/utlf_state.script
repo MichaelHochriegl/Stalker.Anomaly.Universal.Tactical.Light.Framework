@@ -21,7 +21,7 @@ local settings = {
     battery_enabled = true,
     show_no_battery_symbol = false,
     default_battery_type = "batteries_dead",
-    default_battery_consumption = 0.01,
+    default_battery_consumption = 0.008,
 }
 
 function get_state()

@@ -140,7 +140,7 @@ local PROFILE = {
     sections = { "wpn_my_weapon", "wpn_my_weapon_alt" },
     mode = "built_in",
     battery_type = "batteries_dead",
-    battery_consumption = 0.01,
+    battery_consumption = 0.008,
 }
 
 local CONFIG = {
@@ -208,7 +208,7 @@ Built-in-only fields:
 - `color`: `{ r, g, b, a }`. Defaults to warm white.
 - `texture`: light texture. Defaults to `internal\internal_tactical_torch`.
 - `battery_type`: inventory section of the battery accepted when dragged onto the weapon. When omitted, the Framework MCM default is used (`batteries_dead` by default).
-- `battery_consumption`: battery draw in Anomaly device-consumption units. When omitted, the Framework MCM default is used (`0.01` by default); negative values are clamped to `0`. UTLF also accepts `battery_consumption_rate` as an alias.
+- `battery_consumption`: battery draw in Anomaly device-consumption units. When omitted, the Framework MCM default is used (`0.008` by default); negative values are clamped to `0`. UTLF also accepts `battery_consumption_rate` as an alias.
 
 Modular-only fields:
 
@@ -252,7 +252,7 @@ Modular tactical light item fields:
 - `allow_repair`: should be `false`; replacing or unloading the battery changes charge instead of item repair.
 - `dont_stack`: should be `true` so separate flashlights always retain their individual charge.
 - `battery_type`: inventory section of the battery accepted when dragged onto a weapon carrying this flashlight. When omitted, the Framework MCM default is used (`batteries_dead` by default).
-- `battery_consumption`: item-specific battery draw in Anomaly device-consumption units. When omitted, the Framework MCM default is used (`0.01` by default); `battery_consumption_rate` is accepted as an alias.
+- `battery_consumption`: item-specific battery draw in Anomaly device-consumption units. When omitted, the Framework MCM default is used (`0.008` by default); `battery_consumption_rate` is accepted as an alias.
 
 Each modular flashlight item defines its own model and emitter settings. Weapon patches define which flashlight items are allowed, where they are mounted, and any mount-specific beam direction correction; modular weapon profiles do not control `range`, `cone_deg`, `texture`, `color`, `light_bone`, or other emitter behavior.
 
