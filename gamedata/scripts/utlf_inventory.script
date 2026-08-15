@@ -4,7 +4,7 @@ local focus_section = nil
 local base_build_desc_header = nil
 
 local function flashlight_battery_percent(obj)
-    if not obj or not utlf_core.safe_is_weapon(obj) then
+    if not utlf_core.battery_enabled() or not obj or not utlf_core.safe_is_weapon(obj) then
         return nil
     end
 
@@ -202,7 +202,12 @@ local function ActorMenu_on_item_drag_drop(obj, weapon, no1, no2)
         )
     end
     local new_battery_profile = utlf_core.light_profile_for_item(item_section)
-    utlf_battery.set_charge(weapon, new_battery_profile, new_battery_charge, new_battery_profile.battery_type)
+    utlf_battery.set_charge(
+        weapon,
+        new_battery_profile,
+        new_battery_charge,
+        utlf_core.battery_type_for_profile(new_battery_profile)
+    )
 
     if was_on then
         s.desired_on = true

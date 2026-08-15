@@ -85,9 +85,7 @@ local function toggle_light()
         play_toggle_sound(false)
     else
         if not utlf_battery.has_power(weapon, profile) then
-            if actor_menu and actor_menu.set_notification then
-                pcall(actor_menu.set_notification, nil, "ui_inGame2_notify_low_battery", 10)
-            end
+            utlf_battery.notify_no_battery()
             return true
         end
 

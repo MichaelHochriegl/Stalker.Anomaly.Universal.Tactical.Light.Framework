@@ -34,11 +34,41 @@
     <string id="ui_mcm_utlf_toggle_modifier_desc">
         <text>Modifier key required together with the toggle key. Set to None if you want the toggle key to work without Shift, Ctrl, or Alt.</text>
     </string>
+    <string id="ui_mcm_utlf_battery_title">
+        <text>Batteries</text>
+    </string>
+    <string id="ui_mcm_utlf_battery_description">
+        <text>Configure the battery system and the fallback battery values used by lights that do not define their own battery settings.</text>
+    </string>
+    <string id="ui_mcm_utlf_battery_enabled">
+        <text>Enable battery feature</text>
+    </string>
+    <string id="ui_mcm_utlf_battery_enabled_desc">
+        <text>When disabled, tactical lights work without batteries or drain. Battery percentages and battery inventory actions are hidden, while existing saved charge is preserved.</text>
+    </string>
+    <string id="ui_mcm_utlf_show_no_battery_symbol">
+        <text>Show no-battery symbol</text>
+    </string>
+    <string id="ui_mcm_utlf_show_no_battery_symbol_desc">
+        <text>Show Anomaly's battery warning symbol when a tactical light has no usable charge. Disabled by default.</text>
+    </string>
+    <string id="ui_mcm_utlf_default_battery_type">
+        <text>Default battery type</text>
+    </string>
+    <string id="ui_mcm_utlf_default_battery_type_desc">
+        <text>Inventory section accepted by lights that do not define a battery type. Enter the exact item section name.</text>
+    </string>
+    <string id="ui_mcm_utlf_default_battery_consumption">
+        <text>Default battery drain</text>
+    </string>
+    <string id="ui_mcm_utlf_default_battery_consumption_desc">
+        <text>Battery consumption used by lights that do not define their own drain value. Set to 0 for no drain.</text>
+    </string>
     <string id="ui_mcm_utlf_modular_flashlights_title">
         <text>Modular Flashlights</text>
     </string>
     <string id="ui_mcm_utlf_modular_flashlights_description">
-        <text>Adjust the beam range and cone angle for each bundled modular flashlight. These controls do not change item prices.</text>
+        <text>Adjust the beam and battery settings for each bundled modular flashlight. These controls do not change item prices.</text>
     </string>
     <string id="ui_mcm_utlf_modular_flashlights_m600df">
         <text>M600DF</text>
@@ -69,5 +99,17 @@
     </string>
     <string id="ui_mcm_utlf_modular_flashlights_cone_deg_desc">
         <text>Beam width in degrees. Lower values make a tighter beam; higher values make a wider beam.</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_battery_type">
+        <text>Battery type</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_battery_type_desc">
+        <text>Inventory section accepted by this flashlight. Enter the exact item section name.</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_battery_consumption">
+        <text>Battery drain</text>
+    </string>
+    <string id="ui_mcm_utlf_modular_flashlights_battery_consumption_desc">
+        <text>Battery consumption for this flashlight. Set to 0 for no drain.</text>
     </string>
 </string_table>

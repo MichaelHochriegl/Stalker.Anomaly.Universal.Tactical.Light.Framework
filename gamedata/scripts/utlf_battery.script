@@ -36,10 +36,9 @@ local function normalized_saved_state(value, profile)
         return nil
     end
 
-    local d = defaults()
     local battery_type = utlf_parse.trim(value.battery_type)
     if not battery_type or battery_type == "" then
-        battery_type = (profile and profile.battery_type) or d.BATTERY_TYPE
+        battery_type = utlf_core.battery_type_for_profile(profile)
     end
     return {
         battery_type = battery_type,
@@ -95,7 +94,7 @@ function battery_state_for_weapon(weapon, profile, initialize)
     end
 
     battery = {
-        battery_type = (profile and profile.battery_type) or defaults().BATTERY_TYPE,
+        battery_type = utlf_core.battery_type_for_profile(profile),
         charge = defaults().BATTERY_FULL,
     }
     save_for_weapon(weapon, battery)
@@ -122,7 +121,7 @@ end
 
 function set_charge(weapon, profile, charge, battery_type)
     set_battery_state(weapon, profile, {
-        battery_type = battery_type or (profile and profile.battery_type) or defaults().BATTERY_TYPE,
+        battery_type = battery_type or utlf_core.battery_type_for_profile(profile),
         charge = charge,
     })
 end
@@ -166,6 +165,10 @@ function has_power(weapon, profile)
         return false
     end
 
+    if not utlf_core.battery_enabled() then
+        return true
+    end
+
     local battery = battery_state_for_weapon(weapon, profile, true)
     return battery and battery.charge > defaults().BATTERY_CRITICAL
 end
@@ -182,7 +185,11 @@ local function battery_consumption_factor()
     return math.max(tonumber(factor), 0)
 end
 
-local function notify_low_battery()
+function notify_no_battery()
+    if not utlf_core.show_no_battery_symbol() then
+        return
+    end
+
     if actor_menu and actor_menu.set_notification then
         pcall(actor_menu.set_notification, nil, "ui_inGame2_notify_low_battery", 10)
     end
@@ -205,11 +212,16 @@ local function turn_off_depleted_light()
     utlf_lights.detach_current_light("battery depleted")
     snd_tactical_light.frequency = 0.85
     snd_tactical_light:play(db.actor, 0, sound_object.s2d)
-    notify_low_battery()
+    notify_no_battery()
 end
 
 local function drain_tick()
     if not drain then
+        return true
+    end
+
+    if not utlf_core.battery_enabled() then
+        stop_drain(false)
         return true
     end
 
@@ -232,7 +244,7 @@ local function drain_tick()
     end
     drain.last_update = now
 
-    local consumption = math.max(tonumber(drain.profile.battery_consumption) or defaults().BATTERY_CONSUMPTION, 0)
+    local consumption = utlf_core.battery_consumption_for_profile(drain.profile)
     local loss = consumption
         * defaults().BATTERY_REFERENCE_UPDATES_PER_SECOND
         * (elapsed_ms / 1000)
@@ -252,6 +264,11 @@ end
 function start_drain(weapon, profile)
     if not weapon or not profile then
         return false
+    end
+
+    if not utlf_core.battery_enabled() then
+        stop_drain(false)
+        return true
     end
 
     if pending_transfer then
@@ -310,7 +327,7 @@ local function is_actor_inventory_drop(slot_from, slot_to)
 end
 
 function try_insert_battery(item, weapon, slot_from, slot_to)
-    if not item or not weapon then
+    if not utlf_core.battery_enabled() or not item or not weapon then
         return false
     end
 
@@ -321,6 +338,7 @@ function try_insert_battery(item, weapon, slot_from, slot_to)
     local is_weapon = utlf_core.safe_is_weapon(weapon)
     local profile
     local current
+    local accepted_battery_type
     if is_weapon then
         local weapon_profile = utlf_core.profile_for_section(weapon:section())
         profile = profile_for_weapon(weapon, weapon_profile)
@@ -328,12 +346,13 @@ function try_insert_battery(item, weapon, slot_from, slot_to)
     elseif utlf_core.is_utlf_attachment_item(weapon:section()) then
         profile = utlf_core.light_profile_for_item(weapon:section())
         current = {
-            battery_type = profile.battery_type,
+            battery_type = utlf_core.battery_type_for_profile(profile),
             charge = item_charge(weapon),
         }
     end
+    accepted_battery_type = profile and utlf_core.battery_type_for_profile(profile)
 
-    if not profile or item:section() ~= profile.battery_type then
+    if not profile or item:section() ~= accepted_battery_type then
         return false
     end
 
@@ -350,7 +369,7 @@ function try_insert_battery(item, weapon, slot_from, slot_to)
     end
 
     if current and current.charge > defaults().BATTERY_CRITICAL then
-        local old_type = current.battery_type or profile.battery_type
+        local old_type = current.battery_type or accepted_battery_type
         local create_ok, create_err = pcall(create_charged_item, old_type, db.actor, current.charge)
         if not create_ok then
             printf("[utlf] failed to return battery %s: %s", tostring(old_type), tostring(create_err))
@@ -358,15 +377,15 @@ function try_insert_battery(item, weapon, slot_from, slot_to)
     end
 
     if is_weapon then
-        set_charge(weapon, profile, inserted_charge, profile.battery_type)
+        set_charge(weapon, profile, inserted_charge, accepted_battery_type)
     else
         weapon:set_condition(inserted_charge)
     end
     if actor_effects and actor_effects.play_item_fx then
-        pcall(actor_effects.play_item_fx, profile.battery_type)
+        pcall(actor_effects.play_item_fx, accepted_battery_type)
     end
     snd_battery:play(db.actor, 0, sound_object.s2d)
-    printf("[utlf] inserted battery %s into %s (charge %.3f)", profile.battery_type, weapon:section(), inserted_charge)
+    printf("[utlf] inserted battery %s into %s (charge %.3f)", accepted_battery_type, weapon:section(), inserted_charge)
     return true
 end
 
@@ -384,7 +403,7 @@ local function unload_target(obj)
     if utlf_core.is_utlf_attachment_item(obj:section()) then
         local profile = utlf_core.light_profile_for_item(obj:section())
         return profile, {
-            battery_type = profile.battery_type,
+            battery_type = utlf_core.battery_type_for_profile(profile),
             charge = item_charge(obj),
         }, false
     end
@@ -392,7 +411,7 @@ local function unload_target(obj)
 end
 
 local function battery_unload_condition(obj, bag, mode)
-    if mode ~= "inventory" then
+    if not utlf_core.battery_enabled() or mode ~= "inventory" then
         return false
     end
 
@@ -405,19 +424,24 @@ local function battery_unload_name(obj, bag, mode)
 end
 
 local function battery_unload_functor(obj, bag, mode)
+    if not utlf_core.battery_enabled() then
+        return false
+    end
+
     local profile, battery, is_weapon = unload_target(obj)
     if not battery or battery.charge <= defaults().BATTERY_CRITICAL then
         return false
     end
 
-    local ok, err = pcall(create_charged_item, battery.battery_type or profile.battery_type, db.actor, battery.charge)
+    local battery_type = battery.battery_type or utlf_core.battery_type_for_profile(profile)
+    local ok, err = pcall(create_charged_item, battery_type, db.actor, battery.charge)
     if not ok then
         printf("[utlf] failed to unload battery from %s: %s", obj:section(), tostring(err))
         return false
     end
 
     if is_weapon then
-        set_charge(obj, profile, defaults().BATTERY_EMPTY, profile.battery_type)
+        set_charge(obj, profile, defaults().BATTERY_EMPTY, utlf_core.battery_type_for_profile(profile))
         local s = state()
         if s.weapon_id == obj:id() and s.desired_on then
             turn_off_depleted_light()
@@ -427,6 +451,27 @@ local function battery_unload_functor(obj, bag, mode)
     end
     snd_battery:play(db.actor, 0, sound_object.s2d)
     return true
+end
+
+function on_settings_changed()
+    if not utlf_core.battery_enabled() then
+        stop_drain(false)
+        return
+    end
+
+    if drain then
+        return
+    end
+
+    local s = state()
+    local weapon = utlf_core.state_weapon()
+    if not weapon or not s.desired_on or not s.light or not s.profile then
+        return
+    end
+
+    if not start_drain(weapon, s.profile) then
+        turn_off_depleted_light()
+    end
 end
 
 local function save_state(m_data)

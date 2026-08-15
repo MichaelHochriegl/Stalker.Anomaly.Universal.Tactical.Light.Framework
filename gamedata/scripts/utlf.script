@@ -62,6 +62,7 @@ end
 function on_option_change()
     utlf_core.refresh_settings()
     utlf_lights.rebuild_active_modular_light("modular flashlight settings changed")
+    utlf_battery.on_settings_changed()
 end
 
 function on_game_start()

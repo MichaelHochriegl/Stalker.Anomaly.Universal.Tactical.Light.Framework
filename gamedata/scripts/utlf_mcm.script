@@ -6,6 +6,10 @@ local function default_toggle_modifier()
     return utlf and utlf.get_default_toggle_modifier and utlf.get_default_toggle_modifier() or 3
 end
 
+local function defaults()
+    return utlf_core.DEFAULTS
+end
+
 local function modular_flashlight_entries()
     if utlf_items and utlf_items.modular_flashlight_mcm_entries then
         return utlf_items.modular_flashlight_mcm_entries()
@@ -34,6 +38,38 @@ local function framework_page()
                     { 2, "mcm_kb_mod_ctrl" },
                     { 3, "mcm_kb_mod_alt" },
                 },
+            },
+            { id = "battery_title", type = "desc", clr = { 200, 200, 255, 200 }, text = "ui_mcm_utlf_battery_title" },
+            { id = "battery_description", type = "desc", text = "ui_mcm_utlf_battery_description" },
+            {
+                id = "battery_enabled",
+                type = "check",
+                val = 1,
+                def = defaults().BATTERY_ENABLED,
+                hint = "utlf_battery_enabled",
+            },
+            {
+                id = "show_no_battery_symbol",
+                type = "check",
+                val = 1,
+                def = defaults().SHOW_NO_BATTERY_SYMBOL,
+                hint = "utlf_show_no_battery_symbol",
+            },
+            {
+                id = "default_battery_type",
+                type = "input",
+                val = 0,
+                def = defaults().BATTERY_TYPE,
+                hint = "utlf_default_battery_type",
+            },
+            {
+                id = "default_battery_consumption",
+                type = "input",
+                val = 2,
+                min = 0,
+                max = 1,
+                def = defaults().BATTERY_CONSUMPTION,
+                hint = "utlf_default_battery_consumption",
             },
         },
     }
@@ -66,6 +102,22 @@ local function modular_flashlights_page()
             step = 1,
             def = item.cone_deg.def,
             hint = "utlf_modular_flashlights_cone_deg",
+        }
+        controls[#controls + 1] = {
+            id = item.battery_type.id,
+            type = "input",
+            val = 0,
+            def = item.battery_type.def,
+            hint = "utlf_modular_flashlights_battery_type",
+        }
+        controls[#controls + 1] = {
+            id = item.battery_consumption.id,
+            type = "input",
+            val = 2,
+            min = item.battery_consumption.min,
+            max = item.battery_consumption.max,
+            def = item.battery_consumption.def,
+            hint = "utlf_modular_flashlights_battery_consumption",
         }
     end
 

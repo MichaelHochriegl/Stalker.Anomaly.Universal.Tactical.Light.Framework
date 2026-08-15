@@ -27,7 +27,7 @@ And Kmack provided the awesome models for the flashlights, so go and thank him, 
 
 - Anomaly/GAMMA with Modded Exes support for `attachment_script_light`.
 - At least one weapon compatibility patch that registers supported weapon sections.
-- MCM is optional; without it, UTLF uses the default keybind and modular flashlight emitter values.
+- MCM is optional; without it, UTLF uses the default keybind, battery behavior, and modular flashlight values.
 
 ## Installation
 
@@ -48,7 +48,8 @@ Enable `Universal Tactical Light Framework` before any UTLF weapon compatibility
 - Press the UTLF toggle key combo to toggle the scripted weapon tactical light.
 - The default combo is `Alt + L`.
 - The key and modifier can be changed in MCM under `Universal Tactical Light Framework` > `Framework`.
-- The six bundled modular flashlight models have independent range and cone controls in MCM under `Universal Tactical Light Framework` > `Modular Flashlights`.
+- Battery behavior and fallback battery values can be changed on the `Framework` page. The battery feature is enabled by default; the no-battery warning symbol is disabled by default.
+- The six bundled modular flashlight models have independent range, cone, battery type, and drain controls in MCM under `Universal Tactical Light Framework` > `Modular Flashlights`.
 - The input handler consumes the configured combo press/release and suppresses the vanilla torch helper for that input, so `Alt + L` should not toggle the vanilla headlamp while UTLF is active.
 - An enabled tactical light stays enabled through saving and loading, and restores when the same weapon is drawn after loading.
 
@@ -94,9 +95,9 @@ Traders sell all six modular flashlights depending on the supply level:
 
 ### Modular Flashlight MCM Controls
 
-When MCM is available, `Universal Tactical Light Framework` > `Modular Flashlights` provides twelve independent sliders: beam range and cone angle for M600DF, M300C, X300U-B, FOXTROT1X, BALDR Pro, and TLR-1 HL.
+When MCM is available, `Universal Tactical Light Framework` > `Modular Flashlights` provides independent beam range, cone angle, battery type, and battery drain controls for M600DF, M300C, X300U-B, FOXTROT1X, BALDR Pro, and TLR-1 HL.
 
-These settings affect only the six bundled UTLF modular flashlight item sections; third-party modular flashlight items continue to use their own LTX emitter settings. Changing a setting immediately recreates an enabled active modular light while preserving its saved module, visible attachment, and on/off state. If MCM is unavailable, an option has not been saved, or its saved value is invalid, UTLF uses the item's static LTX value instead.
+These settings affect only the six bundled UTLF modular flashlight item sections; third-party modular flashlight items continue to use their own explicit LTX values. Changing a setting immediately recreates an enabled active modular light while preserving its saved module, visible attachment, and on/off state. If MCM is unavailable, an option has not been saved, or its saved value is invalid, UTLF uses the item's static LTX value instead.
 
 ## Optional Integrations
 
@@ -204,8 +205,8 @@ Built-in-only fields:
 - `cone_deg`: spot cone angle in degrees. Defaults to `24`.
 - `color`: `{ r, g, b, a }`. Defaults to warm white.
 - `texture`: light texture. Defaults to `internal\internal_tactical_torch`.
-- `battery_type`: inventory section of the battery accepted when dragged onto the weapon. Defaults to `batteries_dead`.
-- `battery_consumption`: battery draw in Anomaly device-consumption units. Defaults to `0.01`; negative values are clamped to `0`. UTLF also accepts `battery_consumption_rate` as an alias.
+- `battery_type`: inventory section of the battery accepted when dragged onto the weapon. When omitted, the Framework MCM default is used (`batteries_dead` by default).
+- `battery_consumption`: battery draw in Anomaly device-consumption units. When omitted, the Framework MCM default is used (`0.01` by default); negative values are clamped to `0`. UTLF also accepts `battery_consumption_rate` as an alias.
 
 Modular-only fields:
 
@@ -244,8 +245,8 @@ Modular tactical light item fields:
 - `light_shadow`: item-specific dynamic shadow toggle.
 - `light_hud_mode`: item-specific HUD lighting path toggle.
 - `light_volumetric`, `light_volumetric_distance`, `light_volumetric_intensity`, `light_volumetric_quality`: item-specific volumetric settings.
-- `battery_type`: inventory section of the battery accepted when dragged onto a weapon carrying this flashlight. Defaults to `batteries_dead`.
-- `battery_consumption`: item-specific battery draw in Anomaly device-consumption units. Defaults to `0.01`; `battery_consumption_rate` is accepted as an alias.
+- `battery_type`: inventory section of the battery accepted when dragged onto a weapon carrying this flashlight. When omitted, the Framework MCM default is used (`batteries_dead` by default).
+- `battery_consumption`: item-specific battery draw in Anomaly device-consumption units. When omitted, the Framework MCM default is used (`0.01` by default); `battery_consumption_rate` is accepted as an alias.
 
 Each modular flashlight item defines its own model and emitter settings. Weapon patches define which flashlight items are allowed, where they are mounted, and any mount-specific beam direction correction; modular weapon profiles do not control `range`, `cone_deg`, `texture`, `color`, `light_bone`, or other emitter behavior.
 
@@ -253,11 +254,13 @@ Each modular flashlight item defines its own model and emitter settings. Weapon 
 
 UTLF keeps battery charge per weapon without changing weapon durability. Existing weapons and modular attachments from saves made before battery support receive one full default battery the first time their light is used. A light automatically switches off at Anomaly's standard critical charge of `0.05`.
 
+The Framework MCM page can disable the battery feature completely. While disabled, tactical lights require no battery, do not drain or expose battery inventory actions, and do not show a battery percentage. Saved charge is retained and resumes when the feature is enabled again. The standard no-battery warning symbol has a separate setting and is disabled by default.
+
 Hovering a supported weapon in the inventory shows its flashlight battery percentage. Built-in lights use the weapon's stored charge; modular profiles show the charge only when a flashlight is attached.
 
 Drag the configured battery item onto a supported weapon, or directly onto a modular flashlight in the inventory, to replace its battery. If the previous battery still has usable charge, UTLF returns it to the actor inventory with that charge preserved. When `custom_functor_autoinject` is available, weapon and modular-flashlight context menus also expose Anomaly's standard unload-battery action. Modular flashlight items retain their charge when attached, detached, or swapped.
 
-Drain is time-normalized to Anomaly's device model at 60 updates per second: `battery_consumption * 60 / 1000` condition per real-time second at the normal battery-consumption difficulty factor. Pausing the game or temporarily suspending the emitter for a non-weapon HUD item does not consume charge. The six bundled lights use `batteries_dead` and define individual rates in `mod_system_utlf_items.ltx`; third-party definitions that omit either field use the defaults above.
+Drain is time-normalized to Anomaly's device model at 60 updates per second: `battery_consumption * 60 / 1000` condition per real-time second at the normal battery-consumption difficulty factor. Pausing the game or temporarily suspending the emitter for a non-weapon HUD item does not consume charge. The six bundled lights use `batteries_dead` and define individual rates in `mod_system_utlf_items.ltx`, all of which can be overridden on the Modular Flashlights MCM page. Third-party and built-in profiles that explicitly define battery values keep those values; definitions that omit either field use the corresponding Framework MCM default.
 
 Weapon patches can define additional attachment groups through:
 
@@ -310,7 +313,7 @@ UTLF avoids `actor_on_update`. Modular attachments are created on HUD draw anima
 - `utlf.script`: small public facade used by compatibility patches.
 - `utlf_parse.script`: internal parsing helpers for strings, INI values, vectors, colors, and bones.
 - `utlf_core.script`: shared defaults, MCM value helpers, common weapon/model helpers, and compatibility facade for internal modules.
-- `utlf_state.script`: runtime state, MCM key settings, active weapon object lookup, and replacement-window flags.
+- `utlf_state.script`: runtime state, framework MCM settings, active weapon object lookup, and replacement-window flags.
 - `utlf_profile.script`: profile copying, section normalization, profile normalization, mount parsing/resolution, allowed attachment checks, and vector/color helpers.
 - `utlf_registry.script`: registered weapon profiles, attachment groups, profile lookup, and active supported weapon lookup.
 - `utlf_items.script`: modular flashlight item config, saved modular item state, item light profiles, and modular model lookup.

@@ -232,10 +232,13 @@ function normalize_profile(profile, section, attachment_groups)
     copy.light_bone = copy.light_bone or d.LIGHT_BONE
     copy.light_direction = utlf_parse.vector3(copy.light_direction or d.LIGHT_DIRECTION, { 0, 0, 0 })
     copy.battery_type = utlf_parse.trim(copy.battery_type)
-    if not copy.battery_type or copy.battery_type == "" then
-        copy.battery_type = d.BATTERY_TYPE
+    if copy.battery_type == "" then
+        copy.battery_type = nil
     end
-    copy.battery_consumption = math.max(tonumber(copy.battery_consumption or copy.battery_consumption_rate) or d.BATTERY_CONSUMPTION, 0)
+    copy.battery_consumption = tonumber(copy.battery_consumption or copy.battery_consumption_rate)
+    if copy.battery_consumption ~= nil then
+        copy.battery_consumption = math.max(copy.battery_consumption, 0)
+    end
     copy.battery_consumption_rate = copy.battery_consumption
     copy.fire_point = copy.fire_point or d.FIRE_POINT
     copy.reattach_delay_ms = tonumber(copy.reattach_delay_ms) or d.REATTACH_DELAY_MS

@@ -18,6 +18,10 @@ local state = {
 local settings = {
     toggle_key = DIK_keys.DIK_L,
     toggle_modifier = 3,
+    battery_enabled = true,
+    show_no_battery_symbol = false,
+    default_battery_type = "batteries_dead",
+    default_battery_consumption = 0.01,
 }
 
 function get_state()
@@ -36,6 +40,24 @@ function refresh_settings()
     local defaults = utlf_core.DEFAULTS
     settings.toggle_key = tonumber(ui_mcm.get("utlf/framework/toggle_key")) or tonumber(ui_mcm.get("utlf/toggle_key")) or defaults.TOGGLE_KEY
     settings.toggle_modifier = tonumber(ui_mcm.get("utlf/framework/toggle_modifier")) or tonumber(ui_mcm.get("utlf/toggle_modifier")) or defaults.TOGGLE_MODIFIER
+    settings.battery_enabled = ui_mcm.get("utlf/framework/battery_enabled")
+    if settings.battery_enabled == nil then
+        settings.battery_enabled = defaults.BATTERY_ENABLED
+    end
+    settings.show_no_battery_symbol = ui_mcm.get("utlf/framework/show_no_battery_symbol")
+    if settings.show_no_battery_symbol == nil then
+        settings.show_no_battery_symbol = defaults.SHOW_NO_BATTERY_SYMBOL
+    end
+    settings.default_battery_type = utlf_core.get_mcm_string(
+        "utlf/framework/default_battery_type",
+        defaults.BATTERY_TYPE
+    )
+    settings.default_battery_consumption = utlf_core.get_mcm_number(
+        "utlf/framework/default_battery_consumption",
+        defaults.BATTERY_CONSUMPTION,
+        0,
+        1
+    )
 end
 
 function state_weapon()

@@ -24,6 +24,8 @@ DEFAULTS = {
     RANGE = 26,
     CONE_DEG = 24,
     TEXTURE = "internal\\internal_tactical_torch",
+    BATTERY_ENABLED = true,
+    SHOW_NO_BATTERY_SYMBOL = false,
     BATTERY_TYPE = "batteries_dead",
     BATTERY_CONSUMPTION = 0.01,
     BATTERY_AMPER_FACTOR = 1000,
@@ -73,6 +75,12 @@ function get_mcm_number(path, fallback, min_value, max_value)
     return clamp_number(value, fallback, min_value, max_value)
 end
 
+function get_mcm_string(path, fallback)
+    local value = ui_mcm and ui_mcm.get(path) or fallback
+    value = utlf_parse.trim(value)
+    return value and value ~= "" and value or fallback
+end
+
 function configured_profile(profile, config)
     local copy = utlf_profile.copy_profile(profile)
     local page_id = config and (config.page_id or config.page)
@@ -107,6 +115,32 @@ end
 
 function get_settings()
     return utlf_state.get_settings()
+end
+
+function battery_enabled()
+    return get_settings().battery_enabled ~= false
+end
+
+function show_no_battery_symbol()
+    return battery_enabled() and get_settings().show_no_battery_symbol == true
+end
+
+function battery_type_for_profile(profile)
+    local battery_type = utlf_parse.trim(profile and profile.battery_type)
+    if battery_type and battery_type ~= "" then
+        return battery_type
+    end
+
+    return get_settings().default_battery_type or DEFAULTS.BATTERY_TYPE
+end
+
+function battery_consumption_for_profile(profile)
+    local consumption = profile and tonumber(profile.battery_consumption or profile.battery_consumption_rate)
+    if consumption ~= nil then
+        return math.max(consumption, 0)
+    end
+
+    return math.max(tonumber(get_settings().default_battery_consumption) or DEFAULTS.BATTERY_CONSUMPTION, 0)
 end
 
 function refresh_settings()
