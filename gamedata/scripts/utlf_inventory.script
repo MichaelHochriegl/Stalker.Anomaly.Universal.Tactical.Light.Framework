@@ -3,6 +3,71 @@ local focus_sections = {}
 local focus_section = nil
 local base_build_desc_header = nil
 
+local function qualitative_beam_size(cone_deg)
+    cone_deg = tonumber(cone_deg) or utlf_core.DEFAULTS.CONE_DEG
+    if cone_deg <= 45 then
+        return "st_utlf_beam_size_narrow"
+    elseif cone_deg <= 55 then
+        return "st_utlf_beam_size_medium"
+    end
+    return "st_utlf_beam_size_wide"
+end
+
+local function qualitative_beam_range(range)
+    range = tonumber(range) or utlf_core.DEFAULTS.RANGE
+    if range <= 40 then
+        return "st_utlf_beam_range_short"
+    elseif range <= 55 then
+        return "st_utlf_beam_range_medium"
+    end
+    return "st_utlf_beam_range_long"
+end
+
+local function flashlight_stat_line(label, value, translate_value)
+    local display_value = translate_value and game.translate_string(value) or tostring(value)
+    return utils_xml.get_color("pda_blue")
+        .. " "
+        .. game.translate_string("st_dot")
+        .. " "
+        .. utils_xml.get_color("ui_gray_1")
+        .. game.translate_string(label)
+        .. ": "
+        .. utils_xml.get_color("pda_blue")
+        .. display_value
+        .. "\\n"
+end
+
+local function modular_flashlight_stats(sec)
+    if not sec or not utlf_core.is_utlf_attachment_item(sec) then
+        return nil
+    end
+
+    local profile = utlf_core.light_profile_for_item(sec)
+    if not profile then
+        return nil
+    end
+
+    local stats = flashlight_stat_line("st_utlf_beam_size", qualitative_beam_size(profile.cone_deg), true)
+        .. flashlight_stat_line("st_utlf_beam_range", qualitative_beam_range(profile.range), true)
+    if utlf_core.battery_enabled() then
+        local battery_type = utlf_core.battery_type_for_profile(profile)
+        local ok, battery_name = pcall(ui_item.get_sec_name, battery_type)
+        if ok and battery_name and battery_name ~= "" then
+            stats = stats .. flashlight_stat_line("st_utlf_battery_type", battery_name)
+        end
+        local consumption = string.format(
+            "%.3f",
+            utlf_core.battery_consumption_for_profile(profile) * 1000
+        ):gsub("%.?0+$", "")
+        stats = stats .. flashlight_stat_line(
+            "st_ui_power_consumption",
+            consumption .. " " .. game.translate_string("st_mah_sec")
+        )
+    end
+
+    return stats .. "\\n" .. utils_xml.get_color("ui_gray_1")
+end
+
 local function flashlight_battery_percent(obj)
     if not utlf_core.battery_enabled() or not obj or not utlf_core.safe_is_weapon(obj) then
         return nil
@@ -37,7 +102,8 @@ end
 
 local function build_desc_header(obj, sec, str)
     local battery_status = flashlight_battery_status(obj)
-    if not battery_status then
+    local flashlight_stats = modular_flashlight_stats(sec)
+    if not battery_status and not flashlight_stats then
         return base_build_desc_header(obj, sec, str)
     end
 
@@ -46,7 +112,7 @@ local function build_desc_header(obj, sec, str)
         str = description and game.translate_string(description) or ""
     end
 
-    return base_build_desc_header(obj, sec, battery_status .. str)
+    return base_build_desc_header(obj, sec, (battery_status or "") .. (flashlight_stats or "") .. str)
 end
 
 local function modular_detach_condition(obj, bag, mode)

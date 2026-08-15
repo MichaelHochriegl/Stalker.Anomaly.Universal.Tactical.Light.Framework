@@ -99,6 +99,8 @@ When MCM is available, `Universal Tactical Light Framework` > `Modular Flashligh
 
 These settings affect only the six bundled UTLF modular flashlight item sections; third-party modular flashlight items continue to use their own explicit LTX values. Changing a setting immediately recreates an enabled active modular light while preserving its saved module, visible attachment, and on/off state. If MCM is unavailable, an option has not been saved, or its saved value is invalid, UTLF uses the item's static LTX value instead.
 
+Modular flashlight inventory descriptions show a qualitative beam size and range derived from the current resolved settings. While the battery feature is enabled, the accepted battery type and power consumption in `mAh/Sec` are also shown. Third-party UTLF flashlight items automatically receive the dynamic stat block while retaining their own description text.
+
 ## Optional Integrations
 
 Drag/drop attachment is the primary modular attach path. When `rax_icon_layers` is available, UTLF registers an icon overlay for weapons with a saved modular flashlight. When `custom_functor_autoinject` is available, UTLF adds inventory context actions to detach saved modular flashlights and unload usable batteries.
