@@ -99,7 +99,7 @@ When MCM is available, `Universal Tactical Light Framework` > `Modular Flashligh
 
 These settings affect only the six bundled UTLF modular flashlight item sections; third-party modular flashlight items continue to use their own explicit LTX values. Changing a setting immediately recreates an enabled active modular light while preserving its saved module, visible attachment, and on/off state. If MCM is unavailable, an option has not been saved, or its saved value is invalid, UTLF uses the item's static LTX value instead.
 
-Modular flashlight inventory descriptions show a qualitative beam size and range derived from the current resolved settings. While the battery feature is enabled, the accepted battery type and power consumption in `mAh/Sec` are also shown. Third-party UTLF flashlight items automatically receive the dynamic stat block while retaining their own description text.
+Modular flashlight inventory descriptions show a qualitative beam size and range derived from the current resolved settings. While the battery feature is enabled, the current charge, accepted battery type, and power consumption in `mAh/Sec` are also shown. Third-party UTLF flashlight items automatically receive the dynamic stat block while retaining their own description text.
 
 ## Optional Integrations
 
@@ -247,6 +247,10 @@ Modular tactical light item fields:
 - `light_shadow`: item-specific dynamic shadow toggle.
 - `light_hud_mode`: item-specific HUD lighting path toggle.
 - `light_volumetric`, `light_volumetric_distance`, `light_volumetric_intensity`, `light_volumetric_quality`: item-specific volumetric settings.
+- `use_condition`: set this to `true` so a loose modular flashlight stores charge in its item condition.
+- `condition_bar`: use `power_progess_bar` for Anomaly's device-style power bar.
+- `allow_repair`: should be `false`; replacing or unloading the battery changes charge instead of item repair.
+- `dont_stack`: should be `true` so separate flashlights always retain their individual charge.
 - `battery_type`: inventory section of the battery accepted when dragged onto a weapon carrying this flashlight. When omitted, the Framework MCM default is used (`batteries_dead` by default).
 - `battery_consumption`: item-specific battery draw in Anomaly device-consumption units. When omitted, the Framework MCM default is used (`0.01` by default); `battery_consumption_rate` is accepted as an alias.
 
@@ -254,11 +258,11 @@ Each modular flashlight item defines its own model and emitter settings. Weapon 
 
 ### Batteries And Drainage
 
-UTLF keeps battery charge per weapon without changing weapon durability. Existing weapons and modular attachments from saves made before battery support receive one full default battery the first time their light is used. A light automatically switches off at Anomaly's standard critical charge of `0.05`.
+UTLF uses a hybrid charge model. A loose modular flashlight stores charge in its own item condition, like Anomaly's electrical devices. While that flashlight is attached, its charge is transferred into UTLF's per-weapon saved state so weapon durability and jam behavior remain untouched. Built-in lights also use the per-weapon state. A light automatically switches off at Anomaly's standard critical charge of `0.05`.
 
 The Framework MCM page can disable the battery feature completely. While disabled, tactical lights require no battery, do not drain or expose battery inventory actions, and do not show a battery percentage. Saved charge is retained and resumes when the feature is enabled again. The standard no-battery warning symbol has a separate setting and is disabled by default.
 
-Hovering a supported weapon in the inventory shows its flashlight battery percentage. Built-in lights use the weapon's stored charge; modular profiles show the charge only when a flashlight is attached.
+Loose modular flashlights use the device-style power bar and percentage display. Hovering a supported weapon shows its separately stored flashlight battery percentage; modular weapon profiles show it only while a flashlight is attached.
 
 Drag the configured battery item onto a supported weapon, or directly onto a modular flashlight in the inventory, to replace its battery. If the previous battery still has usable charge, UTLF returns it to the actor inventory with that charge preserved. When `custom_functor_autoinject` is available, weapon and modular-flashlight context menus also expose Anomaly's standard unload-battery action. Modular flashlight items retain their charge when attached, detached, or swapped.
 
