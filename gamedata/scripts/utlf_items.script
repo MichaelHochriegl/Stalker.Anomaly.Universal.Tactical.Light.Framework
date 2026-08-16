@@ -65,6 +65,7 @@ local function base_light_profile_for_item(item_section)
         color = nil,
         light_bone = d.LIGHT_BONE,
         light_direction = utlf_parse.vector3(d.LIGHT_DIRECTION, { x = 0, y = 0, z = 0 }),
+        battery_flicker_threshold = d.BATTERY_FLICKER_THRESHOLD,
     }
 
     if not item_section then
@@ -96,6 +97,11 @@ local function base_light_profile_for_item(item_section)
     )
     copy.battery_consumption = battery_consumption and math.max(battery_consumption, 0) or nil
     copy.battery_consumption_rate = copy.battery_consumption
+    copy.battery_flicker_threshold = utlf_parse.section_number(
+        item_section,
+        "battery_flicker_threshold",
+        copy.battery_flicker_threshold
+    )
 
     return copy
 end

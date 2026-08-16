@@ -30,6 +30,11 @@ DEFAULTS = {
     BATTERY_CONSUMPTION = 0.008,
     BATTERY_AMPER_FACTOR = 1000,
     BATTERY_CRITICAL = 0.05,
+    BATTERY_FLICKER_THRESHOLD = 0.10,
+    BATTERY_FLICKER_MIN_GAP_MS = 600,
+    BATTERY_FLICKER_MAX_GAP_MS = 1800,
+    BATTERY_FLICKER_MIN_OFF_MS = 40,
+    BATTERY_FLICKER_MAX_OFF_MS = 110,
     BATTERY_EMPTY = 0.0001,
     BATTERY_FULL = 0.9999,
     BATTERY_REFERENCE_UPDATES_PER_SECOND = 60,
@@ -141,6 +146,15 @@ function battery_consumption_for_profile(profile)
     end
 
     return math.max(tonumber(get_settings().default_battery_consumption) or DEFAULTS.BATTERY_CONSUMPTION, 0)
+end
+
+function battery_flicker_threshold_for_profile(profile)
+    local threshold = profile and tonumber(profile.battery_flicker_threshold)
+    if threshold == nil then
+        threshold = DEFAULTS.BATTERY_FLICKER_THRESHOLD
+    end
+
+    return math.max(DEFAULTS.BATTERY_EMPTY, math.min(DEFAULTS.BATTERY_FULL, threshold))
 end
 
 function refresh_settings()

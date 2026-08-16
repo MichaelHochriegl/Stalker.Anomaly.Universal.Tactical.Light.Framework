@@ -185,6 +185,74 @@ local function battery_consumption_factor()
     return math.max(tonumber(factor), 0)
 end
 
+local function random_duration(minimum, maximum)
+    return minimum + math.floor(math.random() * (maximum - minimum + 1))
+end
+
+local function restore_flickering_light()
+    if not drain or not drain.flicker_off then
+        return
+    end
+
+    local s = state()
+    if s.light and s.desired_on and not s.hud_item_light_suspended then
+        pcall(function()
+            s.light.enabled = true
+        end)
+    end
+    drain.flicker_off = false
+end
+
+local function next_flicker_gap(charge, threshold)
+    local d = defaults()
+    local usable_span = threshold - d.BATTERY_CRITICAL
+    local charge_factor = usable_span > 0 and (charge - d.BATTERY_CRITICAL) / usable_span or 0
+    charge_factor = math.max(0, math.min(1, charge_factor))
+
+    -- Dropouts become more frequent as the battery approaches its shutoff point.
+    local gap_scale = 0.35 + (0.65 * charge_factor)
+    return math.floor(random_duration(d.BATTERY_FLICKER_MIN_GAP_MS, d.BATTERY_FLICKER_MAX_GAP_MS) * gap_scale)
+end
+
+local function update_low_battery_flicker(now)
+    if not drain then
+        return
+    end
+
+    local d = defaults()
+    local threshold = utlf_core.battery_flicker_threshold_for_profile(drain.profile)
+    if threshold <= d.BATTERY_CRITICAL or drain.battery.charge > threshold then
+        restore_flickering_light()
+        drain.next_flicker_at = nil
+        return
+    end
+
+    if not drain.next_flicker_at then
+        drain.next_flicker_at = now + next_flicker_gap(drain.battery.charge, threshold)
+        return
+    end
+    if now < drain.next_flicker_at then
+        return
+    end
+
+    local s = state()
+    if drain.flicker_off then
+        restore_flickering_light()
+        drain.next_flicker_at = now + next_flicker_gap(drain.battery.charge, threshold)
+        return
+    end
+
+    local ok = pcall(function()
+        s.light.enabled = false
+    end)
+    if ok then
+        drain.flicker_off = true
+        drain.next_flicker_at = now + random_duration(d.BATTERY_FLICKER_MIN_OFF_MS, d.BATTERY_FLICKER_MAX_OFF_MS)
+    else
+        drain.next_flicker_at = now + next_flicker_gap(drain.battery.charge, threshold)
+    end
+end
+
 function notify_no_battery()
     if not utlf_core.show_no_battery_symbol() then
         return
@@ -237,6 +305,8 @@ local function drain_tick()
         drain.last_update = now
         return false
     end
+
+    update_low_battery_flicker(now)
 
     local elapsed_ms = now - drain.last_update
     if elapsed_ms < defaults().BATTERY_DRAIN_INTERVAL_MS then
@@ -296,6 +366,8 @@ function start_drain(weapon, profile)
 end
 
 function stop_drain(preserve_for_replacement)
+    restore_flickering_light()
+
     if drain and preserve_for_replacement then
         local profile = drain.profile or {}
         pending_transfer = {

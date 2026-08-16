@@ -240,6 +240,8 @@ function normalize_profile(profile, section, attachment_groups)
         copy.battery_consumption = math.max(copy.battery_consumption, 0)
     end
     copy.battery_consumption_rate = copy.battery_consumption
+    copy.battery_flicker_threshold = tonumber(copy.battery_flicker_threshold)
+        or d.BATTERY_FLICKER_THRESHOLD
     copy.fire_point = copy.fire_point or d.FIRE_POINT
     copy.reattach_delay_ms = tonumber(copy.reattach_delay_ms) or d.REATTACH_DELAY_MS
     copy.replacement_window_ms = tonumber(copy.replacement_window_ms) or d.REPLACEMENT_WINDOW_MS

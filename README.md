@@ -253,6 +253,7 @@ Modular tactical light item fields:
 - `dont_stack`: should be `true` so separate flashlights always retain their individual charge.
 - `battery_type`: inventory section of the battery accepted when dragged onto a weapon carrying this flashlight. When omitted, the Framework MCM default is used (`batteries_dead` by default).
 - `battery_consumption`: item-specific battery draw in Anomaly device-consumption units. When omitted, the Framework MCM default is used (`0.008` by default); `battery_consumption_rate` is accepted as an alias.
+- `battery_flicker_threshold`: remaining charge at which the light begins brief, irregular dropouts. The default is `0.10`; set it at or below the `0.05` shutoff threshold to disable flickering for a profile.
 
 Each modular flashlight item defines its own model and emitter settings. Weapon patches define which flashlight items are allowed, where they are mounted, and any mount-specific beam direction correction; modular weapon profiles do not control `range`, `cone_deg`, `texture`, `color`, `light_bone`, or other emitter behavior.
 
@@ -266,7 +267,7 @@ Loose modular flashlights use the device-style power bar and percentage display.
 
 Drag the configured battery item onto a supported weapon, or directly onto a modular flashlight in the inventory, to replace its battery. If the previous battery still has usable charge, UTLF returns it to the actor inventory with that charge preserved. When `custom_functor_autoinject` is available, weapon and modular-flashlight context menus also expose Anomaly's standard unload-battery action. Modular flashlight items retain their charge when attached, detached, or swapped.
 
-Drain is time-normalized to Anomaly's device model at 60 updates per second: `battery_consumption * 60 / 1000` condition per real-time second at the normal battery-consumption difficulty factor. Pausing the game or temporarily suspending the emitter for a non-weapon HUD item does not consume charge. The six bundled lights use `batteries_dead` and define individual rates in `mod_system_utlf_items.ltx`, all of which can be overridden on the Modular Flashlights MCM page. Third-party and built-in profiles that explicitly define battery values keep those values; definitions that omit either field use the corresponding Framework MCM default.
+Drain is time-normalized to Anomaly's device model at 60 updates per second: `battery_consumption * 60 / 1000` condition per real-time second at the normal battery-consumption difficulty factor. Pausing the game or temporarily suspending the emitter for a non-weapon HUD item does not consume charge. At 10% charge the bundled lights begin brief, irregular dropouts that become more frequent until they switch off at 5%. The six bundled lights use `batteries_dead` and define individual rates in `mod_system_utlf_items.ltx`, all of which can be overridden on the Modular Flashlights MCM page. Third-party and built-in profiles that explicitly define battery values keep those values; definitions that omit either field use the corresponding Framework MCM default.
 
 Weapon patches can define additional attachment groups through:
 
