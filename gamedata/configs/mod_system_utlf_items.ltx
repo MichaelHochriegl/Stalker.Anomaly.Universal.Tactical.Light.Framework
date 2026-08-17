@@ -9,7 +9,10 @@ inv_grid_width = 2
 inv_grid_height = 1
 inv_grid_x = 10
 inv_grid_y = 0
-repair_type = scope
+use_condition = true
+condition_bar = power_progess_bar
+allow_repair = false
+dont_stack = true
 utlf_light_attachment = true
 attachment_icon_layer = ui\utlf_light_icon_layer_m600df
 scripted_model = dynamics\weapons\wpn_lights_rifle\wpn_m600df
@@ -24,6 +27,9 @@ light_range = 40
 light_cone_deg = 62
 light_texture = utlf\lights\spot_flood
 light_color = 1.00,0.96,0.88,0.55
+battery_type = batteries_dead
+battery_consumption = 0.010
+battery_flicker_threshold = 0.10
 on_anim = true
 
 [utlf_tactical_light_m300c]:utlf_tactical_light
@@ -39,6 +45,8 @@ light_range = 48
 light_cone_deg = 50
 light_texture = utlf\lights\spot_balanced
 light_color = 1.00,0.93,0.80,0.55
+battery_type = batteries_dead
+battery_consumption = 0.006
 
 [utlf_tactical_light_x300]:utlf_tactical_light
 visual = dynamics\weapons\world\wpn_x300_world.ogf
@@ -54,6 +62,8 @@ light_range = 38
 light_cone_deg = 60
 light_texture = utlf\lights\spot_flood
 light_color = 1.00,0.95,0.88,0.55
+battery_type = batteries_dead
+battery_consumption = 0.009
 
 [utlf_tactical_light_foxtrot1]:utlf_tactical_light
 visual = dynamics\weapons\world\wpn_foxtrot1_world.ogf
@@ -69,6 +79,8 @@ light_range = 52
 light_cone_deg = 38
 light_texture = utlf\lights\spot_throw
 light_color = 1.00,0.95,0.86,0.55
+battery_type = batteries_dead
+battery_consumption = 0.006
 
 [utlf_tactical_light_olight]:utlf_tactical_light
 visual = dynamics\weapons\world\wpn_olight_world.ogf
@@ -84,6 +96,8 @@ light_range = 39
 light_cone_deg = 58
 light_texture = utlf\lights\spot_flood
 light_color = 1.00,0.93,0.78,0.55
+battery_type = batteries_dead
+battery_consumption = 0.011
 
 [utlf_tactical_light_streamlight]:utlf_tactical_light
 visual = dynamics\weapons\world\wpn_streamlight_world.ogf
@@ -99,6 +113,8 @@ light_range = 56
 light_cone_deg = 42
 light_texture = utlf\lights\spot_throw
 light_color = 1.00,0.94,0.84,0.55
+battery_type = batteries_dead
+battery_consumption = 0.009
 
 [utlf_tactical_light_groups]
 utlf_rifles = utlf_tactical_light, utlf_tactical_light_m300c

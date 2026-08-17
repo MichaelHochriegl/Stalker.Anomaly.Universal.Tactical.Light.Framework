@@ -5,39 +5,69 @@
         <text>M600DF Rifle Light</text>
     </string>
     <string id="st_utlf_tactical_light_descr">
-        <text>M600DF rifle-pattern weapon light module with a warm flood beam for Universal Tactical Light Framework modular long-gun profiles.</text>
+        <text>SureFire's M600DF Scout Light is a rifle-mounted tactical light built around a hard-anodized aluminum body and a recoil-resistant TIR optic. Its sealed construction, compact Scout mounting pattern, and tailcap controls are designed for hard field use.</text>
     </string>
     <string id="st_utlf_tactical_light_m300c">
         <text>M300C Rifle Light</text>
     </string>
     <string id="st_utlf_tactical_light_m300c_descr">
-        <text>M300C compact rifle-pattern weapon light module with a warm balanced beam for Universal Tactical Light Framework modular long-gun profiles.</text>
+        <text>SureFire's M300C Mini Scout is a compact rifle-mounted tactical light with a hard-anodized aluminum body and recoil-resistant TIR optic. Its sealed housing, low-profile mount, and click-style tailcap package Scout Light construction into a lightweight form.</text>
     </string>
     <string id="st_utlf_tactical_light_x300">
         <text>X300U-B Pistol Light</text>
     </string>
     <string id="st_utlf_tactical_light_x300_descr">
-        <text>X300U-B pistol-pattern weapon light module with a warm flood beam for Universal Tactical Light Framework modular handgun profiles.</text>
+        <text>SureFire's X300U-B is a pistol-mounted tactical light with an aluminum body, sealed construction, and a recoil-resistant optic. It uses an ambidextrous momentary or constant-on switch and a screw-clamp rail mount intended to remain secure under repeated recoil.</text>
     </string>
     <string id="st_utlf_tactical_light_foxtrot1">
         <text>FOXTROT1X Pistol Light</text>
     </string>
     <string id="st_utlf_tactical_light_foxtrot1_descr">
-        <text>FOXTROT1X compact pistol-pattern weapon light module with a warm throw beam for Universal Tactical Light Framework modular handgun profiles.</text>
+        <text>SIG Sauer's compact FOXTROT1X pistol light uses a sealed 6061 aluminum housing and fits common pistol rails. Ambidextrous side switches support momentary or latched operation, while interchangeable rail keys adapt the unit to different handguns.</text>
     </string>
     <string id="st_utlf_tactical_light_olight">
         <text>BALDR Pro Pistol Light</text>
     </string>
     <string id="st_utlf_tactical_light_olight_descr">
-        <text>BALDR Pro pistol-pattern weapon light module with a warm flood beam for Universal Tactical Light Framework modular handgun profiles.</text>
+        <text>Olight's BALDR Pro combines a pistol-mounted tactical light with an adjustable green aiming laser in an aluminum housing. It uses ambidextrous controls, a quick-release mounting lever, and interchangeable Glock and Picatinny rail adapters.</text>
     </string>
     <string id="st_utlf_tactical_light_streamlight">
         <text>TLR-1 HL Pistol Light</text>
     </string>
     <string id="st_utlf_tactical_light_streamlight_descr">
-        <text>TLR-1 HL pistol-pattern weapon light module with a warm throw beam for Universal Tactical Light Framework modular handgun profiles.</text>
+        <text>Streamlight's TLR-1 HL is a pistol-mounted tactical light built with a machined aluminum body and sealed construction. Its rail-grip clamp can be secured without placing a hand in front of the muzzle, while ambidextrous controls provide momentary, constant, and programmable strobe operation.</text>
     </string>
     <string id="st_utlf_detach_tactical_light">
         <text>Detach tactical light</text>
+    </string>
+    <string id="st_utlf_flashlight_battery">
+        <text>Flashlight battery</text>
+    </string>
+    <string id="st_utlf_beam_size">
+        <text>Beam size</text>
+    </string>
+    <string id="st_utlf_beam_size_narrow">
+        <text>Narrow</text>
+    </string>
+    <string id="st_utlf_beam_size_medium">
+        <text>Medium</text>
+    </string>
+    <string id="st_utlf_beam_size_wide">
+        <text>Wide</text>
+    </string>
+    <string id="st_utlf_beam_range">
+        <text>Beam range</text>
+    </string>
+    <string id="st_utlf_beam_range_short">
+        <text>Short</text>
+    </string>
+    <string id="st_utlf_beam_range_medium">
+        <text>Medium</text>
+    </string>
+    <string id="st_utlf_beam_range_long">
+        <text>Long</text>
+    </string>
+    <string id="st_utlf_battery_type">
+        <text>Battery type</text>
     </string>
 </string_table>

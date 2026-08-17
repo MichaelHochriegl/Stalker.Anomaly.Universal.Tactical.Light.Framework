@@ -176,8 +176,15 @@ function detach_item(weapon, return_item)
         return false
     end
 
+    local battery_profile = utlf_core.light_profile_for_item(saved.section)
+    local battery = utlf_battery.battery_state_for_weapon(weapon, battery_profile, true)
+
     if return_item then
-        alife_create_item(saved.section, db.actor)
+        utlf_battery.create_charged_item(
+            saved.section,
+            db.actor,
+            battery and battery.charge or defaults().BATTERY_FULL
+        )
     end
 
     local s = state()
@@ -191,5 +198,6 @@ function detach_item(weapon, return_item)
 
     modular_attachments[weapon:id()] = nil
     utlf_core.clear_modular_light(weapon)
+    utlf_battery.clear_battery_state(weapon)
     return true
 end

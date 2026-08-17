@@ -4,6 +4,8 @@ local MODULAR_FLASHLIGHT_MCM = {
     page_id = "modular_flashlights",
     range = { suffix = "_range", min = 5, max = 80 },
     cone_deg = { suffix = "_cone_deg", min = 8, max = 90 },
+    battery_type = { suffix = "_battery_type" },
+    battery_consumption = { suffix = "_battery_consumption", min = 0, max = 1 },
     items = {
         {
             section = "utlf_tactical_light",
@@ -63,6 +65,7 @@ local function base_light_profile_for_item(item_section)
         color = nil,
         light_bone = d.LIGHT_BONE,
         light_direction = utlf_parse.vector3(d.LIGHT_DIRECTION, { x = 0, y = 0, z = 0 }),
+        battery_flicker_threshold = d.BATTERY_FLICKER_THRESHOLD,
     }
 
     if not item_section then
@@ -82,6 +85,23 @@ local function base_light_profile_for_item(item_section)
     copy.color = utlf_parse.section_string(item_section, "light_color", copy.color)
     copy.light_bone = utlf_parse.section_string(item_section, "light_bone", copy.light_bone)
     copy.light_direction = utlf_parse.vector3(utlf_parse.section_string(item_section, "light_direction", nil), copy.light_direction)
+    copy.battery_type = utlf_parse.trim(utlf_parse.section_string(item_section, "battery_type", nil))
+    if copy.battery_type == "" then
+        copy.battery_type = nil
+    end
+
+    local battery_consumption = utlf_parse.section_number(
+        item_section,
+        "battery_consumption",
+        utlf_parse.section_number(item_section, "battery_consumption_rate", nil)
+    )
+    copy.battery_consumption = battery_consumption and math.max(battery_consumption, 0) or nil
+    copy.battery_consumption_rate = copy.battery_consumption
+    copy.battery_flicker_threshold = utlf_parse.section_number(
+        item_section,
+        "battery_flicker_threshold",
+        copy.battery_flicker_threshold
+    )
 
     return copy
 end
@@ -98,6 +118,11 @@ function modular_flashlight_mcm_entries()
         local profile = base_light_profile_for_item(item.section)
         local range_id, range_min, range_max = modular_mcm_option(item, "range")
         local cone_id, cone_min, cone_max = modular_mcm_option(item, "cone_deg")
+        local battery_type_id = modular_mcm_option(item, "battery_type")
+        local battery_consumption_id, battery_consumption_min, battery_consumption_max = modular_mcm_option(
+            item,
+            "battery_consumption"
+        )
 
         entries[#entries + 1] = {
             section = item.section,
@@ -105,6 +130,13 @@ function modular_flashlight_mcm_entries()
             heading = item.heading,
             range = { id = range_id, def = profile.range, min = range_min, max = range_max },
             cone_deg = { id = cone_id, def = profile.cone_deg, min = cone_min, max = cone_max },
+            battery_type = { id = battery_type_id, def = profile.battery_type or defaults().BATTERY_TYPE },
+            battery_consumption = {
+                id = battery_consumption_id,
+                def = profile.battery_consumption or defaults().BATTERY_CONSUMPTION,
+                min = battery_consumption_min,
+                max = battery_consumption_max,
+            },
         }
     end
 
@@ -120,6 +152,11 @@ function light_profile_for_item(item_section)
 
     local range_id, range_min, range_max = modular_mcm_option(item, "range")
     local cone_id, cone_min, cone_max = modular_mcm_option(item, "cone_deg")
+    local battery_type_id = modular_mcm_option(item, "battery_type")
+    local battery_consumption_id, battery_consumption_min, battery_consumption_max = modular_mcm_option(
+        item,
+        "battery_consumption"
+    )
     copy.range = utlf_core.get_mcm_number(
         utlf_core.config_path(MODULAR_FLASHLIGHT_MCM.page_id, range_id),
         copy.range,
@@ -132,6 +169,17 @@ function light_profile_for_item(item_section)
         cone_min,
         cone_max
     )
+    copy.battery_type = utlf_core.get_mcm_string(
+        utlf_core.config_path(MODULAR_FLASHLIGHT_MCM.page_id, battery_type_id),
+        copy.battery_type or defaults().BATTERY_TYPE
+    )
+    copy.battery_consumption = utlf_core.get_mcm_number(
+        utlf_core.config_path(MODULAR_FLASHLIGHT_MCM.page_id, battery_consumption_id),
+        copy.battery_consumption or defaults().BATTERY_CONSUMPTION,
+        battery_consumption_min,
+        battery_consumption_max
+    )
+    copy.battery_consumption_rate = copy.battery_consumption
 
     return copy
 end
