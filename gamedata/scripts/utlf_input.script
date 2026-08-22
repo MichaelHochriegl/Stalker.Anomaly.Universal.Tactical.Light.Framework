@@ -1,8 +1,8 @@
 local snd_tactical_light = sound_object("interface\\inv_torch")
-local original_torch_toggle = nil
-local wrapped_torch_toggle = nil
+local TORCH_WRAP_MARK = "utlf_torch_toggle_wrapper"
 local suppress_torch_until = nil
 local suppress_torch_release_key = nil
+local started = false
 
 local function state()
     return utlf_core.get_state()
@@ -40,23 +40,31 @@ local function engine_torch_suppressed()
 end
 
 local function wrap_engine_torch_toggle()
-    if not actor_effects or not actor_effects.Hit_TorchToggle then
+    if not actor_effects or not actor_effects.Hit_TorchToggle or actor_effects[TORCH_WRAP_MARK] then
         return
     end
 
-    if wrapped_torch_toggle and actor_effects.Hit_TorchToggle == wrapped_torch_toggle then
-        return
-    end
+    local previous = actor_effects.Hit_TorchToggle
+    local in_call = false
 
-    original_torch_toggle = actor_effects.Hit_TorchToggle
-    wrapped_torch_toggle = function(...)
-        if engine_torch_suppressed() then
+    local wrapper = function(...)
+        if in_call or engine_torch_suppressed() then
             return
         end
 
-        return original_torch_toggle(...)
+        in_call = true
+        local ok, result = pcall(previous, ...)
+        in_call = false
+
+        if ok then
+            return result
+        end
+
+        printf("[utlf] chained torch toggle failed: %s", tostring(result))
     end
-    actor_effects.Hit_TorchToggle = wrapped_torch_toggle
+
+    actor_effects.Hit_TorchToggle = wrapper
+    actor_effects[TORCH_WRAP_MARK] = wrapper
 
     printf("[utlf] wrapped engine torch toggle")
 end
@@ -144,6 +152,11 @@ local function on_before_key_release(key, bind, dis, flags)
 end
 
 function on_game_start()
+    if started then
+        return
+    end
+    started = true
+
     wrap_engine_torch_toggle()
     RegisterScriptCallback("on_before_key_press", on_before_key_press)
     RegisterScriptCallback("on_before_key_release", on_before_key_release)
