@@ -52,6 +52,7 @@ Enable `Universal Tactical Light Framework` before any UTLF weapon compatibility
 - The six bundled modular flashlight models have independent range, cone, battery type, and drain controls in MCM under `Universal Tactical Light Framework` > `Modular Flashlights`.
 - The input handler consumes the configured combo press/release and suppresses the vanilla torch helper for that input, so `Alt + L` should not toggle the vanilla headlamp while UTLF is active.
 - An enabled tactical light stays enabled through saving and loading, and restores when the same weapon is drawn after loading.
+- Drawing a PDA or skinning item temporarily suspends an enabled light. Quick-melee turns the beam off during the melee animation and restores it shortly after the same weapon starts drawing, so the beam follows the weapon back up. Switching to another weapon does not restore the previous light.
 
 ## Modular Tactical Light Item
 
