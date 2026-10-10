@@ -1,5 +1,8 @@
 local strfind = string.find
 local magnifier_switch_wrapped = false
+local melee_resume_weapon_id = nil
+local MELEE_RESUME_EVENT = "resume_after_melee"
+local MELEE_RESUME_DELAY = 0.1
 
 local function state()
     return utlf_core.get_state()
@@ -80,6 +83,35 @@ local function wrap_magnifier_switch()
     printf("[utlf] wrapped 3DSS magnifier switch")
 end
 
+local function clear_melee_resume()
+    melee_resume_weapon_id = nil
+    RemoveTimeEvent("utlf", MELEE_RESUME_EVENT)
+end
+
+local function schedule_melee_resume(weapon)
+    if not weapon or weapon:id() ~= melee_resume_weapon_id then
+        return
+    end
+
+    local weapon_id = weapon:id()
+    local started_at = time_global()
+    RemoveTimeEvent("utlf", MELEE_RESUME_EVENT)
+    CreateTimeEvent("utlf", MELEE_RESUME_EVENT, MELEE_RESUME_DELAY, function()
+        if melee_resume_weapon_id ~= weapon_id then
+            return true
+        end
+
+        local active = db.actor and db.actor:active_item()
+        if active and active:id() == weapon_id then
+            utlf_lights.resume_after_non_weapon_hud_item(active, "weapon drawing after melee")
+            melee_resume_weapon_id = nil
+            return true
+        end
+        -- The show callback can precede the active-item change by a few frames.
+        return time_global() - started_at >= 2000
+    end)
+end
+
 local function actor_on_hud_animation_play(anim_table, item)
     if not anim_table or not anim_table.anm_name or not strfind(anim_table.anm_name, "^anm_show") then
         return
@@ -87,15 +119,28 @@ local function actor_on_hud_animation_play(anim_table, item)
 
     local active = item or (db.actor and db.actor:active_item())
     local s = state()
+    if active and utlf_core.safe_is_weapon(active) and _G.IsMelee and IsMelee(active) then
+        if s.desired_on and s.light then
+            RemoveTimeEvent("utlf", MELEE_RESUME_EVENT)
+            utlf_lights.suspend_for_non_weapon_hud_item("melee HUD item shown")
+            melee_resume_weapon_id = s.weapon_id
+        end
+        return
+    end
+
     if not active or not utlf_core.safe_is_weapon(active) then
-        -- HUD attachments stop updating while the PDA or another device is shown.
+        clear_melee_resume()
+        -- HUD attachments stop updating while a PDA or another device is shown.
         -- Disable the light until the same weapon's draw animation resumes it.
-        utlf_lights.suspend_for_non_weapon_hud_item("non-weapon HUD item shown")
+        utlf_lights.suspend_for_non_weapon_hud_item("temporary HUD item shown")
         return
     end
 
     local profile = utlf_core.profile_for_section(active:section())
     local same_light_weapon = s.weapon_id and active:id() == s.weapon_id
+    if not same_light_weapon then
+        clear_melee_resume()
+    end
     if s.light and not same_light_weapon then
         if profile and utlf_core.replacement_pending() and (not s.replacement_target_section or active:section() == s.replacement_target_section) then
             utlf_lights.detach_current_light("weapon object replaced", true)
@@ -113,7 +158,11 @@ local function actor_on_hud_animation_play(anim_table, item)
     end
 
     utlf_lights.restore_light_after_load(active, profile)
-    utlf_lights.resume_after_non_weapon_hud_item(active, "weapon HUD item shown")
+    if melee_resume_weapon_id == active:id() then
+        schedule_melee_resume(active)
+    else
+        utlf_lights.resume_after_non_weapon_hud_item(active, "weapon HUD item shown")
+    end
 
     if utlf_core.is_modular_profile(profile) then
         utlf_modular.ensure_attachment(active, profile)
@@ -125,6 +174,7 @@ local function actor_on_hud_animation_play(anim_table, item)
 end
 
 function on_game_start()
+    clear_melee_resume()
     wrap_magnifier_switch()
     RegisterScriptCallback("actor_on_hud_animation_play", actor_on_hud_animation_play)
 end
