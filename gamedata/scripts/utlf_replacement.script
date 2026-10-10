@@ -1,7 +1,7 @@
 local strfind = string.find
 local magnifier_switch_wrapped = false
 local melee_resume_weapon_id = nil
-local melee_resume_generation = 0
+local MELEE_RESUME_EVENT = "resume_after_melee"
 local MELEE_RESUME_DELAY = 0.1
 
 local function state()
@@ -85,7 +85,7 @@ end
 
 local function clear_melee_resume()
     melee_resume_weapon_id = nil
-    melee_resume_generation = melee_resume_generation + 1
+    RemoveTimeEvent("utlf", MELEE_RESUME_EVENT)
 end
 
 local function schedule_melee_resume(weapon)
@@ -93,19 +93,18 @@ local function schedule_melee_resume(weapon)
         return
     end
 
-    melee_resume_generation = melee_resume_generation + 1
-    local generation = melee_resume_generation
     local weapon_id = weapon:id()
     local started_at = time_global()
-    CreateTimeEvent("utlf", "resume_after_melee_" .. generation, MELEE_RESUME_DELAY, function()
-        if generation ~= melee_resume_generation or melee_resume_weapon_id ~= weapon_id then
+    RemoveTimeEvent("utlf", MELEE_RESUME_EVENT)
+    CreateTimeEvent("utlf", MELEE_RESUME_EVENT, MELEE_RESUME_DELAY, function()
+        if melee_resume_weapon_id ~= weapon_id then
             return true
         end
 
         local active = db.actor and db.actor:active_item()
         if active and active:id() == weapon_id then
             utlf_lights.resume_after_non_weapon_hud_item(active, "weapon drawing after melee")
-            clear_melee_resume()
+            melee_resume_weapon_id = nil
             return true
         end
         -- The show callback can precede the active-item change by a few frames.
@@ -122,9 +121,9 @@ local function actor_on_hud_animation_play(anim_table, item)
     local s = state()
     if active and utlf_core.safe_is_weapon(active) and _G.IsMelee and IsMelee(active) then
         if s.desired_on and s.light then
+            RemoveTimeEvent("utlf", MELEE_RESUME_EVENT)
             utlf_lights.suspend_for_non_weapon_hud_item("melee HUD item shown")
             melee_resume_weapon_id = s.weapon_id
-            melee_resume_generation = melee_resume_generation + 1
         end
         return
     end
