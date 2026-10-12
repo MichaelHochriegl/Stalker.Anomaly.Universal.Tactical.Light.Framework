@@ -222,7 +222,7 @@ function normalize_profile(profile, section, attachment_groups)
     copy.range = tonumber(copy.range) or d.RANGE
     copy.cone_deg = tonumber(copy.cone_deg) or d.CONE_DEG
     copy.light_type = tonumber(copy.light_type) or 2
-    copy.hud_mode = copy.hud_mode == true
+    copy.hud_mode = copy.hud_mode ~= false
     copy.shadow = copy.shadow ~= false
     copy.volumetric = copy.volumetric == true
     copy.volumetric_distance = tonumber(copy.volumetric_distance) or 0.25

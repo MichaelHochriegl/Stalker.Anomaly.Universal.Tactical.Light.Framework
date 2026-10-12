@@ -59,6 +59,10 @@ function rebuild_active_light(reason)
     return utlf_lights.rebuild_active_light(reason)
 end
 
+function debug_beam(seconds)
+    return utlf_beam_debug.start(seconds)
+end
+
 function on_option_change()
     utlf_core.refresh_settings()
     utlf_lights.rebuild_active_modular_light("modular flashlight settings changed")
