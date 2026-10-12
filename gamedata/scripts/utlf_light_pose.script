@@ -1,0 +1,143 @@
+local session
+local EVENT = "world_light_pose"
+
+local function offset_transform(attachment)
+    local position = attachment:get_position()
+    local rotation = attachment:get_rotation()
+    local scale = attachment:get_scale()
+    local origin = attachment:get_origin()
+    local rotate = matrix():setHPB(math.rad(rotation.x), math.rad(rotation.y), math.rad(rotation.z))
+
+    -- Match script_attachment::RecalcOffset, including origin and model scale.
+    if origin.x ~= 0 or origin.y ~= 0 or origin.z ~= 0 then
+        return matrix():translate(-origin.x, -origin.y, -origin.z)
+            :mulA_43(rotate):mulA_43(matrix():scale(scale))
+            :mulA_43(matrix():translate(position))
+    end
+    return rotate:translate_over(position):mulB_43(matrix():scale(scale))
+end
+
+local function local_bone_transform(attachment, bone)
+    return matrix():invert(attachment:get_transform())
+        :mulB_43(attachment:bone_transform(bone))
+end
+
+local function hud_attachment_transform(attachment, weapon, depth)
+    if depth > 8 then
+        error("invalid light attachment hierarchy")
+    end
+
+    local parent = attachment:get_parent()
+    local transform
+    if parent.attachment then
+        transform = hud_attachment_transform(parent.attachment, weapon, depth + 1)
+            :mulB_43(local_bone_transform(parent.attachment, attachment:get_parent_bone()))
+    else
+        if not parent.object or parent.object:id() ~= weapon:id() then
+            error("light attachment is not parented to the active weapon")
+        end
+        transform = weapon:bone_transform(attachment:get_parent_bone(), attachment:get_type() == 0)
+    end
+    return transform:mulB_43(offset_transform(attachment))
+end
+
+local function source_direction(s)
+    if session and session.light == s.light and session.item_section then
+        return utlf_core.modular_light_direction_for_item(
+            session.weapon_profile, session.item_section, session.item_direction
+        )
+    end
+    return s.profile.light_direction
+end
+
+-- Reconstruct the current weapon pose rather than using last draw's cached
+-- attachment transform. Only the model-local bone pose comes from that cache.
+function emitter_transform(weapon, s)
+    if weapon:hud_fire_bone_id() == 65535 then
+        return nil
+    end
+    local bone = hud_attachment_transform(s.attachment, weapon, 0)
+        :mulB_43(local_bone_transform(s.attachment, s.attachment:get_light_bone()))
+    local direction = utlf_parse.vector3(source_direction(s), { 0, 0, 0 })
+    local emitter = matrix():set(bone):mulB_43(matrix():setHPB(
+        math.rad(direction.x), math.rad(direction.y), math.rad(direction.z)
+    ))
+    return emitter, bone
+end
+
+local function update_pose(weapon, s)
+    local emitter, bone = emitter_transform(weapon, s)
+    if not emitter then
+        return
+    end
+    emitter:hud_to_world()
+
+    -- Native SetXFORM will multiply by the attachment bone again. Express the
+    -- converted world pose as a local offset so its result is already in world
+    -- space before the renderer caches the cone and shadow projection.
+    local offset = matrix():invert(bone):mulB_43(emitter)
+    offset.k = vector():set(offset.k):normalize()
+    offset.j = vector():crossproduct(offset.k, offset.i):normalize()
+    offset.i = vector():crossproduct(offset.j, offset.k):normalize()
+    local rotation = offset:getHPB()
+    s.light:set_position(offset.c)
+    s.light:set_direction(rotation.x, rotation.y, rotation.z)
+    s.light.hud_mode = false
+end
+
+local function restore_source_pose(s)
+    local direction = utlf_parse.vector3(s.profile.light_direction, { 0, 0, 0 })
+    s.light:set_position(0, 0, 0)
+    s.light:set_direction(math.rad(direction.x), math.rad(direction.y), math.rad(direction.z))
+    s.light.hud_mode = s.profile.hud_mode
+end
+
+local function tick()
+    local s = utlf_core.get_state()
+    if not session or s.light ~= session.light or s.weapon_id ~= session.weapon_id then
+        session = nil
+        return true
+    end
+
+    local weapon = utlf_core.state_weapon()
+    local active = db.actor and db.actor:active_item()
+    if not weapon or not active or active:id() ~= session.weapon_id
+        or not s.desired_on or s.hud_item_light_suspended then
+        return false
+    end
+
+    local ok, err = pcall(update_pose, weapon, s)
+    if not ok then
+        pcall(restore_source_pose, s)
+        printf("[utlf] world-space beam update failed: %s", tostring(err))
+        session = nil
+        return true
+    end
+    return false
+end
+
+function stop()
+    if session then
+        RemoveTimeEvent("utlf", EVENT)
+        session = nil
+    end
+end
+
+function start(weapon_profile, item_section, item_direction)
+    stop()
+    local s = utlf_core.get_state()
+    if not s.profile.hud_mode then
+        return
+    end
+
+    session = {
+        light = s.light,
+        weapon_id = s.weapon_id,
+        weapon_profile = weapon_profile,
+        item_section = item_section,
+        item_direction = item_direction,
+    }
+    if not tick() then
+        CreateTimeEvent("utlf", EVENT, 0, tick)
+    end
+end

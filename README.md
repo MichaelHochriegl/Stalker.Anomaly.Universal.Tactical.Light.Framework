@@ -202,7 +202,7 @@ Built-in-only fields:
 - `model`: optional invisible carrier model. Defaults to the weapon `visual` without `.ogf`.
 - `attachment_scale`: invisible carrier model scale. Defaults to `0.001`.
 - `shadow`: enables dynamic shadows. Defaults to `true`; set `false` to opt out.
-- `hud_mode`: uses the HUD lighting path when set to `true`. Defaults to `false`.
+- `hud_mode`: converts the HUD attachment's light position and direction to world space before the renderer builds its light matrices. Defaults to `true`; an explicit `false` disables the conversion.
 - `light_bone`: bone the script light attaches to. Defaults to `wpn_body`.
 - `range`: light range. Defaults to `26`.
 - `cone_deg`: spot cone angle in degrees. Defaults to `24`.
@@ -246,7 +246,7 @@ Modular tactical light item fields:
 - `light_color`: item-specific color as `r,g,b,a`.
 - `light_type`: item-specific light type. Defaults to spot light.
 - `light_shadow`: item-specific dynamic shadow toggle.
-- `light_hud_mode`: item-specific HUD lighting path toggle.
+- `light_hud_mode`: item-specific HUD-to-world light conversion toggle. Defaults to `true`; an explicit `false` disables the conversion.
 - `light_volumetric`, `light_volumetric_distance`, `light_volumetric_intensity`, `light_volumetric_quality`: item-specific volumetric settings.
 - `use_condition`: set this to `true` so a loose modular flashlight stores charge in its item condition.
 - `condition_bar`: use `power_progess_bar` for Anomaly's device-style power bar.
@@ -290,9 +290,9 @@ Example long-gun profile:
 
 ## Shadows And HUD Mode
 
-The framework defaults to `shadow = true` and `hud_mode = false`. This makes the light follow the weapon attachment while using the normal world-lighting path, which is more stable for shadowed weapon lights.
+The framework defaults to `shadow = true` and `hud_mode = true`. First-person weapon attachments use the HUD projection, which can have a different field of view from the world. UTLF reconstructs the current animated attachment pose and converts its emitter position and direction to world space each frame while the light is on. It writes that pose through the attachment light's local offset and disables the renderer's HUD conversion to prevent a second conversion.
 
-`hud_mode = true` can change lighting and shadow behavior. Use it only if a specific built-in profile or modular flashlight item has been tested with it.
+Built-in profiles can explicitly set `hud_mode = false`, and modular flashlight items can set `light_hud_mode = false`, for emitters whose transforms are already in world space. Disabling the conversion for a HUD attachment can make the beam diverge from the visible weapon, especially in lowered poses. Mount position and `light_direction` still control the physical emitter offset and local beam alignment.
 
 If a built-in weapon profile or modular flashlight item flickers or is too expensive with shadows enabled, set its shadow option to `false`.
 
@@ -314,7 +314,7 @@ Use `mode = "modular"` for weapons where the player should attach/detach a flash
 
 Tactical light state is not transferred across normal weapon switches. The framework only reattaches automatically during a known 3DSS magnifier replacement, where the old weapon object is intentionally swapped for another registered section.
 
-UTLF avoids `actor_on_update`. Modular attachments are created on HUD draw animations, inventory drag/drop attaches the saved item state, battery drain is processed by a single lightweight time event while a light is enabled, and known 3DSS replacement repair uses one-shot time events.
+UTLF avoids `actor_on_update`. Modular attachments are created on HUD draw animations, inventory drag/drop attaches the saved item state, battery drain and world-space emitter updates use time events while a light is enabled, and known 3DSS replacement repair uses one-shot time events.
 
 ## Internal Script Layout
 
@@ -327,6 +327,7 @@ UTLF avoids `actor_on_update`. Modular attachments are created on HUD draw anima
 - `utlf_items.script`: modular flashlight item config, saved modular item state, item light profiles, and modular model lookup.
 - `utlf_battery.script`: per-weapon charge persistence, battery inventory interactions, time-normalized drain, and depletion handling.
 - `utlf_lights.script`: scripted light lifecycle, built-in carrier attachments, rebuilds, and save/load restoration.
+- `utlf_light_pose.script`: current animated emitter pose, HUD-to-world conversion before renderer caching, and an active-light update timer.
 - `utlf_replacement.script`: 3DSS magnifier replacement wrapping, delayed light transfer, and HUD draw replacement repair.
 - `utlf_input.script`: toggle key handling, vanilla torch suppression, modifier checks, and click sound playback.
 - `utlf_modular.script`: nested modular mount and visible tactical light attachment creation/removal.

@@ -55,7 +55,7 @@ local function base_light_profile_for_item(item_section)
         light_type = 2,
         range = d.RANGE,
         cone_deg = d.CONE_DEG,
-        hud_mode = false,
+        hud_mode = true,
         shadow = true,
         volumetric = false,
         volumetric_distance = 0.25,

@@ -25,6 +25,7 @@ local function clear_light_refs(reason, had_light)
 end
 
 function detach_light(reason, stale_only, keep_attachment)
+    utlf_light_pose.stop()
     local s = state()
     local had_light = s.light ~= nil
 
@@ -181,6 +182,8 @@ function attach_light(weapon, profile, reason)
         local attachment_name
         local attachment_is_modular = utlf_core.is_modular_profile(profile)
         local light_profile = profile
+        local item_section
+        local item_direction
 
         if attachment_is_modular then
             local saved = utlf_core.saved_modular_light(weapon)
@@ -190,6 +193,8 @@ function attach_light(weapon, profile, reason)
                 error("no modular tactical light item attached")
             end
             light_profile = utlf_core.copy_profile(utlf_core.light_profile_for_item(saved and saved.section))
+            item_section = saved and saved.section
+            item_direction = light_profile.light_direction
             if utlf_core.modular_light_direction_for_item then
                 light_profile.light_direction = utlf_core.modular_light_direction_for_item(
                     profile,
@@ -219,6 +224,7 @@ function attach_light(weapon, profile, reason)
         s.attachment_name = attachment_name
         s.attachment_is_modular = attachment_is_modular
         s.light = light
+        utlf_light_pose.start(profile, item_section, item_direction)
     end)
 
     if ok and s.light then
