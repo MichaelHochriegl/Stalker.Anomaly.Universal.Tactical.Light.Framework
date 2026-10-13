@@ -88,7 +88,6 @@ local function toggle_light()
     local s = state()
     if s.desired_on then
         s.desired_on = false
-        utlf_core.clear_replacement()
         utlf_lights.detach_current_light("manual toggle")
         play_toggle_sound(false)
     else
@@ -98,7 +97,6 @@ local function toggle_light()
         end
 
         s.desired_on = true
-        utlf_core.clear_replacement()
         utlf_lights.attach_light(weapon, profile)
         if s.light then
             play_toggle_sound(true)

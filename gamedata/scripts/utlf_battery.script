@@ -1,5 +1,4 @@
 local drain = nil
-local pending_transfer = nil
 local snd_battery = sound_object("interface\\inv_batt")
 local snd_tactical_light = sound_object("interface\\inv_torch")
 
@@ -276,7 +275,6 @@ local function turn_off_depleted_light()
     end
 
     s.desired_on = false
-    utlf_core.clear_replacement()
     utlf_lights.detach_current_light("battery depleted")
     snd_tactical_light.frequency = 0.85
     snd_tactical_light:play(db.actor, 0, sound_object.s2d)
@@ -289,14 +287,14 @@ local function drain_tick()
     end
 
     if not utlf_core.battery_enabled() then
-        stop_drain(false)
+        stop_drain()
         return true
     end
 
     local s = state()
     local weapon = utlf_core.state_weapon()
     if not weapon or not s.desired_on or not s.light or s.weapon_id ~= drain.weapon_id then
-        stop_drain(false)
+        stop_drain()
         return true
     end
 
@@ -337,15 +335,8 @@ function start_drain(weapon, profile)
     end
 
     if not utlf_core.battery_enabled() then
-        stop_drain(false)
+        stop_drain()
         return true
-    end
-
-    if pending_transfer then
-        if pending_transfer.expires_at >= time_global() and pending_transfer.weapon_id ~= weapon:id() then
-            save_for_weapon(weapon, pending_transfer.battery)
-        end
-        pending_transfer = nil
     end
 
     local battery = battery_state_for_weapon(weapon, profile, true)
@@ -353,7 +344,7 @@ function start_drain(weapon, profile)
         return false
     end
 
-    stop_drain(false)
+    stop_drain()
     drain = {
         weapon_id = weapon:id(),
         profile = profile,
@@ -365,28 +356,11 @@ function start_drain(weapon, profile)
     return true
 end
 
-function stop_drain(preserve_for_replacement)
+function stop_drain()
     restore_flickering_light()
-
-    if drain and preserve_for_replacement then
-        local profile = drain.profile or {}
-        pending_transfer = {
-            weapon_id = drain.weapon_id,
-            battery = copy_battery_state(drain.battery),
-            expires_at = time_global()
-                + (tonumber(profile.reattach_delay_ms) or defaults().REATTACH_DELAY_MS)
-                + (tonumber(profile.replacement_window_ms) or defaults().REPLACEMENT_WINDOW_MS),
-        }
-    elseif not preserve_for_replacement then
-        pending_transfer = nil
-    end
 
     drain = nil
     pcall(RemoveTimeEvent, "utlf", "battery_drain")
-end
-
-function cancel_pending_transfer()
-    pending_transfer = nil
 end
 
 local function is_actor_inventory_drop(slot_from, slot_to)
@@ -527,7 +501,7 @@ end
 
 function on_settings_changed()
     if not utlf_core.battery_enabled() then
-        stop_drain(false)
+        stop_drain()
         return
     end
 
@@ -558,7 +532,7 @@ local function save_state(m_data)
 end
 
 local function load_state(m_data)
-    stop_drain(false)
+    stop_drain()
 end
 
 function on_game_start()

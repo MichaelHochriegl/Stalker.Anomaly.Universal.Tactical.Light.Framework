@@ -30,7 +30,7 @@ function detach_light(reason, stale_only, keep_attachment)
     local had_light = s.light ~= nil
 
     if s.weapon_id and s.profile then
-        utlf_battery.stop_drain(stale_only == true)
+        utlf_battery.stop_drain()
     end
 
     if s.light then
@@ -229,7 +229,6 @@ function attach_light(weapon, profile, reason)
 
     if ok and s.light then
         if utlf_battery.start_drain(weapon, s.profile) then
-            utlf_core.clear_replacement()
             printf("[utlf] enabled attached light for %s (%s)", weapon:section(), tostring(s.weapon_id))
             return
         end
@@ -307,8 +306,6 @@ local function save_state(m_data)
             }
         end
     end
-
-    utlf_core.clear_replacement()
 end
 
 local function load_state(m_data)

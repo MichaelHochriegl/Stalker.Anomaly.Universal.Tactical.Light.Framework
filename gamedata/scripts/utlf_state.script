@@ -11,8 +11,6 @@ local state = {
     light = nil,
     hud_item_light_suspended = false,
     saved_light_state = nil,
-    replacement_until = nil,
-    replacement_target_section = nil,
 }
 
 local settings = {
@@ -69,13 +67,4 @@ function state_weapon()
     if obj and utlf_core.safe_is_weapon(obj) then
         return obj
     end
-end
-
-function clear_replacement()
-    state.replacement_until = nil
-    state.replacement_target_section = nil
-end
-
-function replacement_pending()
-    return state.replacement_until and time_global() <= state.replacement_until
 end
