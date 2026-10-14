@@ -52,6 +52,7 @@ Enable `Universal Tactical Light Framework` before any UTLF weapon compatibility
 - The six bundled modular flashlight models have independent range, cone, battery type, and drain controls in MCM under `Universal Tactical Light Framework` > `Modular Flashlights`.
 - The input handler consumes the configured combo press/release and suppresses the vanilla torch helper for that input, so `Alt + L` should not toggle the vanilla headlamp while UTLF is active.
 - An enabled tactical light stays enabled through saving and loading, and restores when the same weapon is drawn after loading.
+- 3DSS bone-based magnifier flips keep the existing light enabled on the same weapon object.
 - Drawing a PDA or skinning item temporarily suspends an enabled light. Quick-melee turns the beam off during the melee animation and restores it shortly after the same weapon starts drawing, so the beam follows the weapon back up. Switching to another weapon does not restore the previous light.
 
 ## Modular Tactical Light Item
@@ -192,8 +193,6 @@ Common fields:
 
 - `sections`: weapon section names supported by this profile.
 - `mode`: `built_in` or `modular`. Defaults to `built_in`.
-- `reattach_delay_ms`: delay after object replacement. Defaults to `250`.
-- `replacement_window_ms`: maximum time after a known replacement where reattaching is allowed. Defaults to `1000`.
 
 Built-in-only fields:
 
@@ -312,23 +311,23 @@ Register only weapons you have tested. Automatic detection is intentionally not 
 
 Use `mode = "modular"` for weapons where the player should attach/detach a flashlight item. Use `mode = "built_in"` for weapons that already have a fixed integrated flashlight model or where external flashlight modules should not be allowed.
 
-Tactical light state is not transferred across normal weapon switches. The framework only reattaches automatically during a known 3DSS magnifier replacement, where the old weapon object is intentionally swapped for another registered section.
+Tactical light state belongs to one weapon object. 3DSS bone-based magnifier flips leave its existing emitter enabled. Drawing a different weapon switches the light off. UTLF does not wrap magnifier switching or weapon cloning.
 
-UTLF avoids `actor_on_update`. Modular attachments are created on HUD draw animations, inventory drag/drop attaches the saved item state, battery drain and world-space emitter updates use time events while a light is enabled, and known 3DSS replacement repair uses one-shot time events.
+UTLF avoids `actor_on_update`. Modular attachments are created on HUD draw animations, inventory drag/drop attaches the saved item state, battery drain and world-space emitter updates use time events while a light is enabled, and quick-melee resume uses a temporary delayed time event.
 
 ## Internal Script Layout
 
 - `utlf.script`: small public facade used by compatibility patches.
 - `utlf_parse.script`: internal parsing helpers for strings, INI values, vectors, colors, and bones.
 - `utlf_core.script`: shared defaults, MCM value helpers, common weapon/model helpers, and compatibility facade for internal modules.
-- `utlf_state.script`: runtime state, framework MCM settings, active weapon object lookup, and replacement-window flags.
+- `utlf_state.script`: runtime state, framework MCM settings, and active weapon object lookup.
 - `utlf_profile.script`: profile copying, section normalization, profile normalization, mount parsing/resolution, allowed attachment checks, and vector/color helpers.
 - `utlf_registry.script`: registered weapon profiles, attachment groups, profile lookup, and active supported weapon lookup.
 - `utlf_items.script`: modular flashlight item config, saved modular item state, item light profiles, and modular model lookup.
 - `utlf_battery.script`: per-weapon charge persistence, battery inventory interactions, time-normalized drain, and depletion handling.
 - `utlf_lights.script`: scripted light lifecycle, built-in carrier attachments, rebuilds, and save/load restoration.
 - `utlf_light_pose.script`: current animated emitter pose, HUD-to-world conversion before renderer caching, and an active-light update timer.
-- `utlf_replacement.script`: 3DSS magnifier replacement wrapping, delayed light transfer, and HUD draw replacement repair.
+- `utlf_hud.script`: HUD item suspension/resume, quick-melee recovery, and active weapon changes.
 - `utlf_input.script`: toggle key handling, vanilla torch suppression, modifier checks, and click sound playback.
 - `utlf_modular.script`: nested modular mount and visible tactical light attachment creation/removal.
 - `utlf_inventory.script`: inventory drag/drop, attachment highlighting, icon layer, and detach context action.

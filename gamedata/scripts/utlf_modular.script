@@ -190,7 +190,6 @@ function detach_item(weapon, return_item)
     local s = state()
     if s.weapon_id == weapon:id() then
         s.desired_on = false
-        utlf_core.clear_replacement()
         utlf_lights.detach_light("modular light detached", false, false)
     else
         remove_modular_root(weapon)

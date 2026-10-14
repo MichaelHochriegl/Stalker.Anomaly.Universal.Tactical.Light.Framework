@@ -39,8 +39,6 @@ DEFAULTS = {
     BATTERY_FULL = 0.9999,
     BATTERY_REFERENCE_UPDATES_PER_SECOND = 60,
     BATTERY_DRAIN_INTERVAL_MS = 250,
-    REATTACH_DELAY_MS = 250,
-    REPLACEMENT_WINDOW_MS = 1000,
 }
 
 function safe_is_weapon(obj)
@@ -166,15 +164,9 @@ function state_weapon()
 end
 
 function clear_replacement()
-    local result = utlf_state.clear_replacement()
-    if utlf_battery and utlf_battery.cancel_pending_transfer then
-        utlf_battery.cancel_pending_transfer()
-    end
-    return result
-end
-
-function replacement_pending()
-    return utlf_state.replacement_pending()
+    -- This is currently a no-op on purpose as to not break any mods that wrongfully use this method.
+    -- As this method is in core, no other mods should use it, but I know a couple that did regardless.
+    -- Keeping it as a no-op should not crash the game, but mods that rely on this doing something might still be wonky. 
 end
 
 function copy_profile(profile)
